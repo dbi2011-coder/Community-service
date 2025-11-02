@@ -1,36 +1,3 @@
-// js/admin.js - إضافة هذا الكود في بداية الملف
-// التحقق من التحميل المزدوج
-if (window.adminPageInitialized) {
-    console.log('⚠️ Admin page already initialized, skipping...');
-} else {
-    window.adminPageInitialized = true;
-
-    // الكود الأصلي لـ admin.js يبدأ من هنا...
-    // بيانات تسجيل الدخول الافتراضية
-    const ADMIN_CREDENTIALS = {
-        username: "عمرو بن العاص",
-        password: "10243"
-    };
-
-    // متغيرات عامة
-    let currentSortOrder = 'date';
-
-    // الانتظار حتى يكون Supabase جاهزاً
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('👨‍💼 Initializing admin page...');
-        
-        document.addEventListener('supabaseReady', initAdminPage);
-        
-        // إذا كان supabase جاهزاً بالفعل
-        if (window.supabaseClient && window.isSupabaseInitialized) {
-            console.log('✅ Supabase already ready, initializing admin page...');
-            setTimeout(initAdminPage, 100);
-        }
-    });
-
-    // باقي الكود كما هو...
-    // [يتبع نفس الكود السابق لـ admin.js]
-}
 // js/admin.js - الملف المعدل ليعمل مع Supabase
 // بيانات تسجيل الدخول الافتراضية
 const ADMIN_CREDENTIALS = {
@@ -797,6 +764,37 @@ async function printContentsList() {
     }
 }
 
+// ========== الكود الجديد لإدارة الملفات ==========
+
+// دالة لرفع الملف إلى Supabase Storage
+async function uploadFileToStorage(file, fileName) {
+    if (!window.supabase) {
+        throw new Error('Supabase client not available');
+    }
+
+    try {
+        // إنشاء مسار فريد للملف
+        const fileExt = fileName.split('.').pop();
+        const filePath = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+        const { data, error } = await window.supabase.storage
+            .from('contents') // اسم ال bucket في Supabase Storage
+            .upload(filePath, file);
+
+        if (error) throw error;
+
+        // الحصول على رابط التحميل العام
+        const { data: urlData } = window.supabase.storage
+            .from('contents')
+            .getPublicUrl(filePath);
+
+        return urlData.publicUrl;
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        throw new Error('فشل في رفع الملف');
+    }
+}
+
 // دوال إدارة المحتوى والزوار
 async function adminDeleteContent(contentId) {
     if (confirm('هل أنت متأكد من حذف هذا المحتوى؟')) {
@@ -960,8 +958,12 @@ async function handleUploadForm(e) {
         case 'file':
             const file = document.getElementById('contentFile').files[0];
             if (file) {
-                // في بيئة حقيقية، يجب رفع الملف إلى خدمة تخزين
-                content = URL.createObjectURL(file);
+                try {
+                    content = await uploadFileToStorage(file, file.name);
+                } catch (error) {
+                    alert('خطأ في رفع الملف: ' + error.message);
+                    return;
+                }
             } else {
                 alert('يرجى اختيار ملف');
                 return;
@@ -978,7 +980,12 @@ async function handleUploadForm(e) {
             const fileWithNote = document.getElementById('contentFileWithNote').files[0];
             note = document.getElementById('contentNote').value.trim();
             if (fileWithNote) {
-                content = URL.createObjectURL(fileWithNote);
+                try {
+                    content = await uploadFileToStorage(fileWithNote, fileWithNote.name);
+                } catch (error) {
+                    alert('خطأ في رفع الملف: ' + error.message);
+                    return;
+                }
             } else {
                 alert('يرجى اختيار ملف');
                 return;
@@ -1006,8 +1013,10 @@ async function handleUploadForm(e) {
         try {
             await addNewContent(type, title, content, note);
             document.getElementById('uploadForm').reset();
+            // إعادة إخفاء جميع الحقول
+            handleContentTypeChange.call(document.getElementById('contentType'));
         } catch (error) {
-            alert('خطأ في إضافة المحتوى');
+            alert('خطأ في إضافة المحتوى: ' + error.message);
         }
     } else {
         alert('يرجى ملء جميع الحقول المطلوبة');
@@ -1016,34 +1025,4 @@ async function handleUploadForm(e) {
 
 async function addNewContent(type, title, content, note = '') {
     try {
-        await window.supabaseClient.addContent({
-            type: type,
-            title: title,
-            content: content,
-            note: note
-        });
-        await loadFilesList();
-        alert('تم إضافة المحتوى بنجاح!');
-    } catch (error) {
-        console.error('Error adding content:', error);
-        throw error;
-    }
-}
-
-// جعل جميع الدوال متاحة في النطاق العام
-window.openTicketManagement = openTicketManagement;
-window.addResponse = addResponse;
-window.updateTicketStatusAndClose = updateTicketStatusAndClose;
-window.deleteTicket = deleteTicket;
-window.closeTicketModal = closeTicketModal;
-window.loadTicketsData = loadTicketsData;
-window.updateTicketsStats = updateTicketsStats;
-window.printVisitorsList = printVisitorsList;
-window.printContentsList = printContentsList;
-window.adminDeleteContent = adminDeleteContent;
-window.openEditStudentModal = openEditStudentModal;
-window.deleteStudent = deleteStudent;
-window.editRating = editRating;
-window.deleteRating = deleteRating;
-window.deleteStudentLog = deleteStudentLog;
-
+        await window.supabaseClient

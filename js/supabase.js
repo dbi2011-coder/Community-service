@@ -5,12 +5,17 @@ console.log('🔧 Starting Supabase functions initialization...');
 if (window.supabaseClient && window.isSupabaseInitialized) {
     console.log('⚠️ Supabase already initialized, skipping...');
 } else {
+    initializeSupabase();
+}
+
+function initializeSupabase() {
     // محاولة تهيئة Supabase
     try {
         // التحقق من وجود المكتبة أولاً
         if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-            console.warn('⚠️ Supabase library not available yet, will retry...');
-            // سنحاول مرة أخرى لاحقاً
+            console.warn('⚠️ Supabase library not available yet, will retry later...');
+            // إعادة المحاولة بعد ثانية
+            setTimeout(initializeSupabase, 1000);
             return;
         }
 
@@ -345,7 +350,7 @@ if (window.supabaseClient && window.isSupabaseInitialized) {
             }
         }
 
-        // دوال التذاكر - معدلة لمعالجة الخطأ 409
+        // دوال التذاكر
         async function getTickets() {
             if (!supabase) return [];
             
@@ -498,30 +503,35 @@ if (window.supabaseClient && window.isSupabaseInitialized) {
 
     } catch (error) {
         console.error('❌ Supabase functions initialization failed:', error);
-        
-        // إنشاء دوال وهمية في حالة الفشل
-        window.supabaseClient = {
-            verifyAdmin: async () => false,
-            getContents: async () => [],
-            addContent: async () => { throw new Error('النظام غير متاح حالياً'); },
-            deleteContent: async () => { throw new Error('النظام غير متاح حالياً'); },
-            getStudentsData: async () => [],
-            saveStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
-            updateStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
-            deleteStudent: async () => { throw new Error('النظام غير متاح حالياً'); },
-            getStudentsLog: async () => [],
-            addStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
-            updateStudentRating: async () => { throw new Error('النظام غير متاح حالياً'); },
-            deleteStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
-            getTickets: async () => [],
-            createTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
-            updateTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
-            deleteTicket: async () => { throw new Error('النظام غير متاح حالياً'); }
-        };
-        
-        window.supabase = {};
-        window.isSupabaseInitialized = true;
-        
-        console.log('✅ Fallback mode activated in supabase.js');
+        setupFallbackMode();
     }
+}
+
+function setupFallbackMode() {
+    console.log('🛡️ Setting up fallback mode...');
+    
+    // إنشاء دوال وهمية في حالة الفشل
+    window.supabaseClient = {
+        verifyAdmin: async () => false,
+        getContents: async () => [],
+        addContent: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteContent: async () => { throw new Error('النظام غير متاح حالياً'); },
+        getStudentsData: async () => [],
+        saveStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
+        updateStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteStudent: async () => { throw new Error('النظام غير متاح حالياً'); },
+        getStudentsLog: async () => [],
+        addStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
+        updateStudentRating: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
+        getTickets: async () => [],
+        createTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
+        updateTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteTicket: async () => { throw new Error('النظام غير متاح حالياً'); }
+    };
+    
+    window.supabase = {};
+    window.isSupabaseInitialized = true;
+    
+    console.log('✅ Fallback mode activated in supabase.js');
 }

@@ -1,3 +1,4 @@
+// js/admin.js - الملف المعدل ليعمل مع Supabase
 // بيانات تسجيل الدخول الافتراضية
 const ADMIN_CREDENTIALS = {
     username: "عمرو بن العاص",
@@ -8,8 +9,8 @@ const ADMIN_CREDENTIALS = {
 let currentSortOrder = 'date';
 
 // دوال مساعدة للتذاكر
-function getTickets() {
-    return JSON.parse(localStorage.getItem('supportTickets')) || [];
+async function getTickets() {
+    return await window.supabaseClient.getTickets();
 }
 
 function getStatusClass(status) {
@@ -22,8 +23,8 @@ function getStatusClass(status) {
 }
 
 // دوال مساعدة أخرى
-function getContents() {
-    return JSON.parse(localStorage.getItem('adminContents')) || [];
+async function getContents() {
+    return await window.supabaseClient.getContents();
 }
 
 function getContentTypeText(type) {
@@ -65,218 +66,233 @@ function getRatingText(rating) {
     return ratings[rating] || 'غير معروف';
 }
 
-// إضافة الدوال المفقودة
-function getStudentsData() {
-    return JSON.parse(localStorage.getItem('studentsData')) || [];
-}
-
 // دوال تحميل القوائم
-function loadFilesList() {
+async function loadFilesList() {
     const filesList = document.getElementById('filesList');
     if (!filesList) return;
     
-    const contents = getContents();
-    filesList.innerHTML = '';
-    
-    if (contents.length === 0) {
-        filesList.innerHTML = '<p class="no-files">لا توجد محتويات مضافة</p>';
-        return;
-    }
-    
-    contents.forEach(content => {
-        const fileElement = document.createElement('div');
-        fileElement.className = 'file-item';
+    try {
+        const contents = await getContents();
+        filesList.innerHTML = '';
         
-        let noteHtml = '';
-        if ((content.type === 'fileWithNote' || content.type === 'linkWithNote') && content.note) {
-            noteHtml = `<p class="file-note">ملاحظة: ${content.note}</p>`;
+        if (contents.length === 0) {
+            filesList.innerHTML = '<p class="no-files">لا توجد محتويات مضافة</p>';
+            return;
         }
         
-        fileElement.innerHTML = `
-            <div class="file-info">
-                <h4>${content.title}</h4>
-                <p>نوع: ${getContentTypeText(content.type)}</p>
-                <p>تاريخ الإضافة: ${content.date}</p>
-                ${noteHtml}
-            </div>
-            <button class="btn delete-btn" onclick="adminDeleteContent('${content.id}')">حذف</button>
-        `;
-        filesList.appendChild(fileElement);
-    });
+        contents.forEach(content => {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'file-item';
+            
+            let noteHtml = '';
+            if ((content.type === 'fileWithNote' || content.type === 'linkWithNote') && content.note) {
+                noteHtml = `<p class="file-note">ملاحظة: ${content.note}</p>`;
+            }
+            
+            fileElement.innerHTML = `
+                <div class="file-info">
+                    <h4>${content.title}</h4>
+                    <p>نوع: ${getContentTypeText(content.type)}</p>
+                    <p>تاريخ الإضافة: ${content.date}</p>
+                    ${noteHtml}
+                </div>
+                <button class="btn delete-btn" onclick="adminDeleteContent('${content.id}')">حذف</button>
+            `;
+            filesList.appendChild(fileElement);
+        });
+    } catch (error) {
+        console.error('Error loading files list:', error);
+        filesList.innerHTML = '<p class="no-files">خطأ في تحميل المحتويات</p>';
+    }
 }
 
-function loadStudentsList() {
+async function loadStudentsList() {
     const studentsTableBody = document.getElementById('studentsTableBody');
     if (!studentsTableBody) return;
     
-    const studentsLog = JSON.parse(localStorage.getItem('studentsLog')) || [];
-    studentsTableBody.innerHTML = '';
-    
-    if (studentsLog.length === 0) {
-        studentsTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">لا توجد بيانات</td></tr>';
-        return;
-    }
-    
-    // تطبيق الترتيب
-    let sortedLog = [...studentsLog];
-    
-    switch(currentSortOrder) {
-        case 'name':
-            sortedLog.sort((a, b) => a.studentName.localeCompare(b.studentName));
-            break;
-        case 'id':
-            sortedLog.sort((a, b) => a.studentId.localeCompare(b.studentId));
-            break;
-        case 'content':
-            sortedLog.sort((a, b) => a.contentTitle.localeCompare(b.contentTitle));
-            break;
-        case 'date':
-        default:
-            sortedLog.sort((a, b) => b.timestamp - a.timestamp);
-            break;
-    }
-    
-    sortedLog.forEach((log, index) => {
-        const row = document.createElement('tr');
-        const ratingStars = log.rating ? '★'.repeat(log.rating) + '☆'.repeat(5 - log.rating) : 'لم يتم التقييم';
-        const ratingNotes = log.ratingNotes || 'لا توجد ملاحظات';
+    try {
+        const studentsLog = await window.supabaseClient.getStudentsLog();
+        studentsTableBody.innerHTML = '';
         
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${log.studentName}</td>
-            <td>${log.studentId}</td>
-            <td>${log.studentPhone || 'غير محدد'}</td>
-            <td>${log.contentTitle}</td>
-            <td>${log.date}</td>
-            <td>${log.time}</td>
-            <td>
-                <div class="rating-display">
-                    ${ratingStars}
-                    ${log.rating ? `<span class="rating-value">${getRatingText(log.rating)}</span>` : ''}
-                </div>
-                ${log.ratingNotes ? `<div class="rating-notes-tooltip">ملاحظات: ${ratingNotes}</div>` : ''}
-            </td>
-            <td>
-                <div class="action-buttons">
-                    ${log.rating ? `
-                        <button class="btn edit-btn" onclick="editRating('${log.studentId}', '${log.contentId}')">تعديل التقييم</button>
-                        <button class="btn delete-btn" onclick="deleteRating('${log.studentId}', '${log.contentId}')">حذف التقييم</button>
-                    ` : 'لا يوجد تقييم'}
-                    <button class="btn delete-log-btn" onclick="deleteStudentLog(${index})" title="حذف سجل الاطلاع">
-                        🗑️ حذف
-                    </button>
-                </div>
-            </td>
-        `;
-        studentsTableBody.appendChild(row);
-    });
+        if (studentsLog.length === 0) {
+            studentsTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">لا توجد بيانات</td></tr>';
+            return;
+        }
+        
+        // تطبيق الترتيب
+        let sortedLog = [...studentsLog];
+        
+        switch(currentSortOrder) {
+            case 'name':
+                sortedLog.sort((a, b) => a.studentName.localeCompare(b.studentName));
+                break;
+            case 'id':
+                sortedLog.sort((a, b) => a.studentId.localeCompare(b.studentId));
+                break;
+            case 'content':
+                sortedLog.sort((a, b) => a.contentTitle.localeCompare(b.contentTitle));
+                break;
+            case 'date':
+            default:
+                sortedLog.sort((a, b) => b.timestamp - a.timestamp);
+                break;
+        }
+        
+        sortedLog.forEach((log, index) => {
+            const row = document.createElement('tr');
+            const ratingStars = log.rating ? '★'.repeat(log.rating) + '☆'.repeat(5 - log.rating) : 'لم يتم التقييم';
+            const ratingNotes = log.ratingNotes || 'لا توجد ملاحظات';
+            
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${log.studentName}</td>
+                <td>${log.studentId}</td>
+                <td>${log.studentPhone || 'غير محدد'}</td>
+                <td>${log.contentTitle}</td>
+                <td>${log.date}</td>
+                <td>${log.time}</td>
+                <td>
+                    <div class="rating-display">
+                        ${ratingStars}
+                        ${log.rating ? `<span class="rating-value">${getRatingText(log.rating)}</span>` : ''}
+                    </div>
+                    ${log.ratingNotes ? `<div class="rating-notes-tooltip">ملاحظات: ${ratingNotes}</div>` : ''}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        ${log.rating ? `
+                            <button class="btn edit-btn" onclick="editRating('${log.id}')">تعديل التقييم</button>
+                            <button class="btn delete-btn" onclick="deleteRating('${log.id}')">حذف التقييم</button>
+                        ` : 'لا يوجد تقييم'}
+                        <button class="btn delete-log-btn" onclick="deleteStudentLog('${log.id}')" title="حذف سجل الاطلاع">
+                            🗑️ حذف
+                        </button>
+                    </div>
+                </td>
+            `;
+            studentsTableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading students list:', error);
+        studentsTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">خطأ في تحميل البيانات</td></tr>';
+    }
 }
 
-function loadStudentsData(searchTerm = '') {
+async function loadStudentsData(searchTerm = '') {
     const studentsDataTableBody = document.getElementById('studentsDataTableBody');
     if (!studentsDataTableBody) return;
     
-    const studentsData = getStudentsData();
-    studentsDataTableBody.innerHTML = '';
-    
-    let filteredStudents = studentsData;
-    if (searchTerm) {
-        filteredStudents = studentsData.filter(student => 
-            student.name.includes(searchTerm) || 
-            student.id.includes(searchTerm) ||
-            student.phone.includes(searchTerm)
-        );
+    try {
+        const studentsData = await window.supabaseClient.getStudentsData();
+        studentsDataTableBody.innerHTML = '';
+        
+        let filteredStudents = studentsData;
+        if (searchTerm) {
+            filteredStudents = studentsData.filter(student => 
+                student.name.includes(searchTerm) || 
+                student.id.includes(searchTerm) ||
+                student.phone.includes(searchTerm)
+            );
+        }
+        
+        if (filteredStudents.length === 0) {
+            studentsDataTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">لا توجد بيانات</td></tr>';
+            return;
+        }
+        
+        filteredStudents.forEach((student, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${student.name}</td>
+                <td>${student.id}</td>
+                <td>${student.phone}</td>
+                <td>${student.firstLogin}</td>
+                <td>
+                    <button class="btn edit-btn" onclick="openEditStudentModal('${student.id}')">تعديل</button>
+                    <button class="btn delete-btn" onclick="deleteStudent('${student.id}')">حذف</button>
+                </td>
+            `;
+            studentsDataTableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading students data:', error);
+        studentsDataTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">خطأ في تحميل البيانات</td></tr>';
     }
-    
-    if (filteredStudents.length === 0) {
-        studentsDataTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">لا توجد بيانات</td></tr>';
-        return;
-    }
-    
-    filteredStudents.forEach((student, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${student.name}</td>
-            <td>${student.id}</td>
-            <td>${student.phone}</td>
-            <td>${student.firstLogin}</td>
-            <td>
-                <button class="btn edit-btn" onclick="openEditStudentModal('${student.id}')">تعديل</button>
-                <button class="btn delete-btn" onclick="deleteStudent('${student.id}')">حذف</button>
-            </td>
-        `;
-        studentsDataTableBody.appendChild(row);
-    });
 }
 
 // دوال إدارة التذاكر
-function openTicketManagement(ticketId) {
-    const tickets = getTickets();
-    const ticket = tickets.find(t => t.id === ticketId);
-    
-    if (ticket) {
-        const modal = document.getElementById('ticketManagementModal');
-        const content = document.getElementById('ticketModalContent');
-        const ticketIdSpan = document.getElementById('modalTicketId');
+async function openTicketManagement(ticketId) {
+    try {
+        const tickets = await getTickets();
+        const ticket = tickets.find(t => t.id === ticketId);
         
-        if (modal && content && ticketIdSpan) {
-            ticketIdSpan.textContent = `#${ticket.id}`;
+        if (ticket) {
+            const modal = document.getElementById('ticketManagementModal');
+            const content = document.getElementById('ticketModalContent');
+            const ticketIdSpan = document.getElementById('modalTicketId');
             
-            content.innerHTML = `
-                <div class="ticket-management">
-                    <div class="ticket-info">
-                        <h4>معلومات التذكرة</h4>
-                        <p><strong>العنوان:</strong> ${ticket.title}</p>
-                        <p><strong>رقم الهوية:</strong> ${ticket.identity}</p>
-                        <p><strong>الحالة:</strong> 
-                            <select id="ticketStatus" class="status-select">
-                                <option value="مفتوحة" ${ticket.status === 'مفتوحة' ? 'selected' : ''}>مفتوحة</option>
-                                <option value="قيد المعالجة" ${ticket.status === 'قيد المعالجة' ? 'selected' : ''}>قيد المعالجة</option>
-                                <option value="مغلقة" ${ticket.status === 'مغلقة' ? 'selected' : ''}>مغلقة</option>
-                            </select>
-                        </p>
-                    </div>
-                    
-                    <div class="ticket-description">
-                        <h4>وصف المشكلة:</h4>
-                        <p>${ticket.description}</p>
-                    </div>
-                    
-                    <div class="response-section">
-                        <h4>إضافة رد</h4>
-                        <textarea id="responseMessage" rows="4" placeholder="أدخل ردك هنا..."></textarea>
-                        <button class="btn" onclick="addResponse('${ticket.id}')">إضافة رد</button>
-                    </div>
-                    
-                    ${ticket.responses.length > 0 ? `
-                        <div class="responses-list">
-                            <h4>الردود السابقة:</h4>
-                            ${ticket.responses.map((response, index) => `
-                                <div class="response-item">
-                                    <div class="response-header">
-                                        <strong>${response.responder}</strong>
-                                        <span class="response-date">${response.date}</span>
-                                    </div>
-                                    <p>${response.message}</p>
-                                </div>
-                            `).join('')}
+            if (modal && content && ticketIdSpan) {
+                ticketIdSpan.textContent = `#${ticket.id}`;
+                
+                content.innerHTML = `
+                    <div class="ticket-management">
+                        <div class="ticket-info">
+                            <h4>معلومات التذكرة</h4>
+                            <p><strong>العنوان:</strong> ${ticket.title}</p>
+                            <p><strong>رقم الهوية:</strong> ${ticket.identity}</p>
+                            <p><strong>الحالة:</strong> 
+                                <select id="ticketStatus" class="status-select">
+                                    <option value="مفتوحة" ${ticket.status === 'مفتوحة' ? 'selected' : ''}>مفتوحة</option>
+                                    <option value="قيد المعالجة" ${ticket.status === 'قيد المعالجة' ? 'selected' : ''}>قيد المعالجة</option>
+                                    <option value="مغلقة" ${ticket.status === 'مغلقة' ? 'selected' : ''}>مغلقة</option>
+                                </select>
+                            </p>
                         </div>
-                    ` : ''}
-                    
-                    <div class="modal-actions">
-                        <button class="btn" onclick="updateTicketStatusAndClose('${ticket.id}')">حفظ التغييرات</button>
-                        <button class="btn secondary" onclick="closeTicketModal()">إغلاق</button>
+                        
+                        <div class="ticket-description">
+                            <h4>وصف المشكلة:</h4>
+                            <p>${ticket.description}</p>
+                        </div>
+                        
+                        <div class="response-section">
+                            <h4>إضافة رد</h4>
+                            <textarea id="responseMessage" rows="4" placeholder="أدخل ردك هنا..."></textarea>
+                            <button class="btn" onclick="addResponse('${ticket.id}')">إضافة رد</button>
+                        </div>
+                        
+                        ${ticket.responses.length > 0 ? `
+                            <div class="responses-list">
+                                <h4>الردود السابقة:</h4>
+                                ${ticket.responses.map((response, index) => `
+                                    <div class="response-item">
+                                        <div class="response-header">
+                                            <strong>${response.responder}</strong>
+                                            <span class="response-date">${response.date}</span>
+                                        </div>
+                                        <p>${response.message}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="modal-actions">
+                            <button class="btn" onclick="updateTicketStatusAndClose('${ticket.id}')">حفظ التغييرات</button>
+                            <button class="btn secondary" onclick="closeTicketModal()">إغلاق</button>
+                        </div>
                     </div>
-                </div>
-            `;
-            
-            modal.classList.remove('hidden');
+                `;
+                
+                modal.classList.remove('hidden');
+            }
         }
+    } catch (error) {
+        console.error('Error opening ticket management:', error);
+        alert('خطأ في فتح إدارة التذكرة');
     }
 }
 
-function addResponse(ticketId) {
+async function addResponse(ticketId) {
     const responseMessage = document.getElementById('responseMessage');
     if (!responseMessage) return;
     
@@ -287,75 +303,75 @@ function addResponse(ticketId) {
         return;
     }
     
-    const tickets = getTickets();
-    const ticketIndex = tickets.findIndex(t => t.id === ticketId);
-    
-    if (ticketIndex !== -1) {
-        tickets[ticketIndex].responses.push({
-            responder: 'المشرف',
-            message: message,
-            date: new Date().toLocaleString('ar-SA')
-        });
+    try {
+        const tickets = await getTickets();
+        const ticket = tickets.find(t => t.id === ticketId);
         
-        tickets[ticketIndex].lastUpdate = new Date().toLocaleString('ar-SA');
-        localStorage.setItem('supportTickets', JSON.stringify(tickets));
-        
-        responseMessage.value = '';
-        openTicketManagement(ticketId);
-        
-        // تحديث البيانات
-        if (window.loadTicketsData) {
-            window.loadTicketsData();
+        if (ticket) {
+            const responses = [...ticket.responses, {
+                responder: 'المشرف',
+                message: message,
+                date: new Date().toLocaleString('ar-SA')
+            }];
+            
+            await window.supabaseClient.updateTicket(ticketId, {
+                responses: responses,
+                last_update: new Date().toISOString()
+            });
+            
+            responseMessage.value = '';
+            await openTicketManagement(ticketId);
+            
+            // تحديث البيانات
+            await loadTicketsData();
+            await updateTicketsStats();
+            
+            alert('تم إضافة الرد بنجاح');
         }
-        if (window.updateTicketsStats) {
-            window.updateTicketsStats();
-        }
-        
-        alert('تم إضافة الرد بنجاح');
+    } catch (error) {
+        console.error('Error adding response:', error);
+        alert('خطأ في إضافة الرد');
     }
 }
 
-function updateTicketStatusAndClose(ticketId) {
+async function updateTicketStatusAndClose(ticketId) {
     const statusSelect = document.getElementById('ticketStatus');
     if (!statusSelect) return;
     
     const newStatus = statusSelect.value;
-    const tickets = getTickets();
-    const ticketIndex = tickets.findIndex(t => t.id === ticketId);
     
-    if (ticketIndex !== -1) {
-        tickets[ticketIndex].status = newStatus;
-        tickets[ticketIndex].lastUpdate = new Date().toLocaleString('ar-SA');
-        localStorage.setItem('supportTickets', JSON.stringify(tickets));
+    try {
+        await window.supabaseClient.updateTicket(ticketId, {
+            status: newStatus,
+            last_update: new Date().toISOString()
+        });
         
         // تحديث البيانات
-        if (window.loadTicketsData) {
-            window.loadTicketsData();
-        }
-        if (window.updateTicketsStats) {
-            window.updateTicketsStats();
-        }
+        await loadTicketsData();
+        await updateTicketsStats();
         
         closeTicketModal();
         alert('تم تحديث حالة التذكرة بنجاح');
+    } catch (error) {
+        console.error('Error updating ticket status:', error);
+        alert('خطأ في تحديث حالة التذكرة');
     }
 }
 
-function deleteTicket(ticketId) {
+async function deleteTicket(ticketId) {
     if (confirm('هل أنت متأكد من حذف هذه التذكرة؟')) {
-        const tickets = getTickets();
-        const filteredTickets = tickets.filter(t => t.id !== ticketId);
-        localStorage.setItem('supportTickets', JSON.stringify(filteredTickets));
-        
-        // تحديث البيانات
-        if (window.loadTicketsData) {
-            window.loadTicketsData();
+        try {
+            await window.supabaseClient.deleteTicket(ticketId);
+            
+            // تحديث البيانات
+            await loadTicketsData();
+            await updateTicketsStats();
+            
+            alert('تم حذف التذكرة بنجاح');
+        } catch (error) {
+            console.error('Error deleting ticket:', error);
+            alert('خطأ في حذف التذكرة');
         }
-        if (window.updateTicketsStats) {
-            window.updateTicketsStats();
-        }
-        
-        alert('تم حذف التذكرة بنجاح');
     }
 }
 
@@ -367,8 +383,8 @@ function closeTicketModal() {
 }
 
 // دوال تحميل وعرض التذاكر
-function loadTicketsData(searchTerm = '') {
-    const tickets = getTickets();
+async function loadTicketsData(searchTerm = '') {
+    const tickets = await getTickets();
     const ticketsTableBody = document.getElementById('ticketsTableBody');
     
     if (!ticketsTableBody) return;
@@ -410,246 +426,248 @@ function loadTicketsData(searchTerm = '') {
     });
 }
 
-function updateTicketsStats() {
-    const tickets = getTickets();
-    const openCount = tickets.filter(t => t.status === 'مفتوحة').length;
-    const pendingCount = tickets.filter(t => t.status === 'قيد المعالجة').length;
-    const closedCount = tickets.filter(t => t.status === 'مغلقة').length;
-    
-    const openElement = document.getElementById('openTicketsCount');
-    const pendingElement = document.getElementById('pendingTicketsCount');
-    const closedElement = document.getElementById('closedTicketsCount');
-    
-    if (openElement) openElement.textContent = openCount;
-    if (pendingElement) pendingElement.textContent = pendingCount;
-    if (closedElement) closedElement.textContent = closedCount;
+async function updateTicketsStats() {
+    try {
+        const tickets = await getTickets();
+        const openCount = tickets.filter(t => t.status === 'مفتوحة').length;
+        const pendingCount = tickets.filter(t => t.status === 'قيد المعالجة').length;
+        const closedCount = tickets.filter(t => t.status === 'مغلقة').length;
+        
+        const openElement = document.getElementById('openTicketsCount');
+        const pendingElement = document.getElementById('pendingTicketsCount');
+        const closedElement = document.getElementById('closedTicketsCount');
+        
+        if (openElement) openElement.textContent = openCount;
+        if (pendingElement) pendingElement.textContent = pendingCount;
+        if (closedElement) closedElement.textContent = closedCount;
+    } catch (error) {
+        console.error('Error updating tickets stats:', error);
+    }
 }
 
 // دوال الطباعة
-function printVisitorsList() {
-    const studentsLog = JSON.parse(localStorage.getItem('studentsLog')) || [];
-    const printWindow = window.open('', '_blank');
-    
-    let sortedLog = [...studentsLog];
-    
-    switch(currentSortOrder) {
-        case 'name':
-            sortedLog.sort((a, b) => a.studentName.localeCompare(b.studentName));
-            break;
-        case 'id':
-            sortedLog.sort((a, b) => a.studentId.localeCompare(b.studentId));
-            break;
-        case 'content':
-            sortedLog.sort((a, b) => a.contentTitle.localeCompare(b.contentTitle));
-            break;
-        case 'date':
-        default:
-            sortedLog.sort((a, b) => b.timestamp - a.timestamp);
-            break;
-    }
-    
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html dir="rtl">
-        <head>
-            <title>قائمة المطلعين</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                h1 { text-align: center; color: #333; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
-                th { background-color: #f5f5f5; }
-                @media print { body { margin: 0; } }
-            </style>
-        </head>
-        <body>
-            <h1>قائمة المطلعين - مشروع الخدمة المجتمعية</h1>
-            <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>الاسم</th>
-                        <th>رقم الهوية</th>
-                        <th>رقم الجوال</th>
-                        <th>المحتوى</th>
-                        <th>التاريخ</th>
-                        <th>الوقت</th>
-                        <th>التقييم</th>
-                        <th>الملاحظات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${sortedLog.map((log, index) => `
+async function printVisitorsList() {
+    try {
+        const studentsLog = await window.supabaseClient.getStudentsLog();
+        const printWindow = window.open('', '_blank');
+        
+        let sortedLog = [...studentsLog];
+        
+        switch(currentSortOrder) {
+            case 'name':
+                sortedLog.sort((a, b) => a.studentName.localeCompare(b.studentName));
+                break;
+            case 'id':
+                sortedLog.sort((a, b) => a.studentId.localeCompare(b.studentId));
+                break;
+            case 'content':
+                sortedLog.sort((a, b) => a.contentTitle.localeCompare(b.contentTitle));
+                break;
+            case 'date':
+            default:
+                sortedLog.sort((a, b) => b.timestamp - a.timestamp);
+                break;
+        }
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html dir="rtl">
+            <head>
+                <title>قائمة المطلعين</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    h1 { text-align: center; color: #333; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
+                    th { background-color: #f5f5f5; }
+                    @media print { body { margin: 0; } }
+                </style>
+            </head>
+            <body>
+                <h1>قائمة المطلعين - مشروع الخدمة المجتمعية</h1>
+                <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</p>
+                <table>
+                    <thead>
                         <tr>
-                            <td>${index + 1}</td>
-                            <td>${log.studentName}</td>
-                            <td>${log.studentId}</td>
-                            <td>${log.studentPhone || 'غير محدد'}</td>
-                            <td>${log.contentTitle}</td>
-                            <td>${log.date}</td>
-                            <td>${log.time}</td>
-                            <td>${log.rating ? '★'.repeat(log.rating) + '☆'.repeat(5 - log.rating) : 'لم يتم التقييم'}</td>
-                            <td>${log.ratingNotes || 'لا توجد ملاحظات'}</td>
+                            <th>#</th>
+                            <th>الاسم</th>
+                            <th>رقم الهوية</th>
+                            <th>رقم الجوال</th>
+                            <th>المحتوى</th>
+                            <th>التاريخ</th>
+                            <th>الوقت</th>
+                            <th>التقييم</th>
+                            <th>الملاحظات</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </body>
-        </html>
-    `);
-    
-    printWindow.document.close();
-    printWindow.print();
+                    </thead>
+                    <tbody>
+                        ${sortedLog.map((log, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${log.studentName}</td>
+                                <td>${log.studentId}</td>
+                                <td>${log.studentPhone || 'غير محدد'}</td>
+                                <td>${log.contentTitle}</td>
+                                <td>${log.date}</td>
+                                <td>${log.time}</td>
+                                <td>${log.rating ? '★'.repeat(log.rating) + '☆'.repeat(5 - log.rating) : 'لم يتم التقييم'}</td>
+                                <td>${log.ratingNotes || 'لا توجد ملاحظات'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.print();
+    } catch (error) {
+        console.error('Error printing visitors list:', error);
+        alert('خطأ في طباعة القائمة');
+    }
 }
 
-function printContentsList() {
-    const contents = getContents();
-    const printWindow = window.open('', '_blank');
-    
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html dir="rtl">
-        <head>
-            <title>قائمة المحتويات</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                h1 { text-align: center; color: #333; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
-                th { background-color: #f5f5f5; }
-                @media print { body { margin: 0; } }
-            </style>
-        </head>
-        <body>
-            <h1>قائمة المحتويات - مشروع الخدمة المجتمعية</h1>
-            <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>العنوان</th>
-                        <th>النوع</th>
-                        <th>تاريخ الإضافة</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${contents.map(content => `
+async function printContentsList() {
+    try {
+        const contents = await getContents();
+        const printWindow = window.open('', '_blank');
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html dir="rtl">
+            <head>
+                <title>قائمة المحتويات</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    h1 { text-align: center; color: #333; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
+                    th { background-color: #f5f5f5; }
+                    @media print { body { margin: 0; } }
+                </style>
+            </head>
+            <body>
+                <h1>قائمة المحتويات - مشروع الخدمة المجتمعية</h1>
+                <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</p>
+                <table>
+                    <thead>
                         <tr>
-                            <td>${content.title}</td>
-                            <td>${getContentTypeText(content.type)}</td>
-                            <td>${content.date}</td>
+                            <th>العنوان</th>
+                            <th>النوع</th>
+                            <th>تاريخ الإضافة</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </body>
-        </html>
-    `);
-    
-    printWindow.document.close();
-    printWindow.print();
+                    </thead>
+                    <tbody>
+                        ${contents.map(content => `
+                            <tr>
+                                <td>${content.title}</td>
+                                <td>${getContentTypeText(content.type)}</td>
+                                <td>${content.date}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.print();
+    } catch (error) {
+        console.error('Error printing contents list:', error);
+        alert('خطأ في طباعة القائمة');
+    }
 }
 
 // دوال إدارة المحتوى والزوار
-function adminDeleteContent(contentId) {
+async function adminDeleteContent(contentId) {
     if (confirm('هل أنت متأكد من حذف هذا المحتوى؟')) {
-        const contents = getContents();
-        const filteredContents = contents.filter(content => content.id !== contentId);
-        localStorage.setItem('adminContents', JSON.stringify(filteredContents));
+        try {
+            await window.supabaseClient.deleteContent(contentId);
+            await loadFilesList();
+            alert('تم حذف المحتوى بنجاح!');
+        } catch (error) {
+            console.error('Error deleting content:', error);
+            alert('خطأ في حذف المحتوى');
+        }
+    }
+}
+
+async function openEditStudentModal(studentId) {
+    try {
+        const studentsData = await window.supabaseClient.getStudentsData();
+        const student = studentsData.find(s => s.id === studentId);
         
-        // تحديث الواجهة مباشرة
-        loadFilesList();
-        alert('تم حذف المحتوى بنجاح!');
+        if (student) {
+            document.getElementById('editStudentOriginalId').value = student.id;
+            document.getElementById('editStudentName').value = student.name;
+            document.getElementById('editStudentId').value = student.id;
+            document.getElementById('editStudentPhone').value = student.phone;
+            document.getElementById('editStudentModal').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error opening edit student modal:', error);
+        alert('خطأ في فتح نافذة التعديل');
     }
 }
 
-function openEditStudentModal(studentId) {
-    const studentsData = getStudentsData();
-    const student = studentsData.find(s => s.id === studentId);
-    
-    if (student) {
-        document.getElementById('editStudentOriginalId').value = student.id;
-        document.getElementById('editStudentName').value = student.name;
-        document.getElementById('editStudentId').value = student.id;
-        document.getElementById('editStudentPhone').value = student.phone;
-        document.getElementById('editStudentModal').classList.remove('hidden');
-    }
-}
-
-// إصلاح دالة حذف الزائر
-function deleteStudent(studentId) {
+async function deleteStudent(studentId) {
     if (confirm('هل أنت متأكد من حذف هذا الزائر؟ سيتم حذف جميع سجلات الاطلاع الخاصة به.')) {
         try {
-            // بيانات الزوار
-            let studentsData = JSON.parse(localStorage.getItem('studentsData')) || [];
-            studentsData = studentsData.filter(student => student.id !== studentId);
-            localStorage.setItem('studentsData', JSON.stringify(studentsData));
-            
-            // سجلات الاطلاع
-            let studentsLog = JSON.parse(localStorage.getItem('studentsLog')) || [];
-            studentsLog = studentsLog.filter(log => log.studentId !== studentId);
-            localStorage.setItem('studentsLog', JSON.stringify(studentsLog));
-            
-            // تحديث الواجهة
-            loadStudentsData();
-            loadStudentsList();
-            
+            await window.supabaseClient.deleteStudent(studentId);
+            await loadStudentsData();
+            await loadStudentsList();
             alert('تم حذف الزائر بنجاح!');
-            
         } catch (error) {
             console.error('Error deleting student:', error);
-            alert('حدث خطأ أثناء حذف الزائر: ' + error.message);
+            alert('خطأ في حذف الزائر');
         }
     }
 }
 
-function editRating(studentId, contentId) {
-    const studentsLog = JSON.parse(localStorage.getItem('studentsLog')) || [];
-    const logIndex = studentsLog.findIndex(log => 
-        log.studentId === studentId && log.contentId === contentId
-    );
-    
-    if (logIndex !== -1) {
-        const newRating = prompt('أدخل التقييم الجديد (1-5):', studentsLog[logIndex].rating);
-        if (newRating && newRating >= 1 && newRating <= 5) {
-            const newNotes = prompt('أدخل الملاحظات الجديدة:', studentsLog[logIndex].ratingNotes || '');
-            studentsLog[logIndex].rating = parseInt(newRating);
-            studentsLog[logIndex].ratingNotes = newNotes || '';
-            studentsLog[logIndex].ratingDate = new Date().toLocaleString('ar-SA');
-            localStorage.setItem('studentsLog', JSON.stringify(studentsLog));
-            loadStudentsList();
-            alert('تم تحديث التقييم بنجاح!');
+async function editRating(logId) {
+    try {
+        const studentsLog = await window.supabaseClient.getStudentsLog();
+        const log = studentsLog.find(l => l.id === logId);
+        
+        if (log) {
+            const newRating = prompt('أدخل التقييم الجديد (1-5):', log.rating);
+            if (newRating && newRating >= 1 && newRating <= 5) {
+                const newNotes = prompt('أدخل الملاحظات الجديدة:', log.ratingNotes || '');
+                await window.supabaseClient.updateStudentRating(logId, parseInt(newRating), newNotes || '');
+                await loadStudentsList();
+                alert('تم تحديث التقييم بنجاح!');
+            }
         }
+    } catch (error) {
+        console.error('Error editing rating:', error);
+        alert('خطأ في تعديل التقييم');
     }
 }
 
-function deleteRating(studentId, contentId) {
+async function deleteRating(logId) {
     if (confirm('هل أنت متأكد من حذف التقييم؟')) {
-        const studentsLog = JSON.parse(localStorage.getItem('studentsLog')) || [];
-        const logIndex = studentsLog.findIndex(log => 
-            log.studentId === studentId && log.contentId === contentId
-        );
-        
-        if (logIndex !== -1) {
-            studentsLog[logIndex].rating = 0;
-            studentsLog[logIndex].ratingNotes = '';
-            studentsLog[logIndex].ratingDate = '';
-            localStorage.setItem('studentsLog', JSON.stringify(studentsLog));
-            loadStudentsList();
+        try {
+            await window.supabaseClient.updateStudentRating(logId, 0, '');
+            await loadStudentsList();
             alert('تم حذف التقييم بنجاح!');
+        } catch (error) {
+            console.error('Error deleting rating:', error);
+            alert('خطأ في حذف التقييم');
         }
     }
 }
 
-function deleteStudentLog(logIndex) {
+async function deleteStudentLog(logId) {
     if (confirm('هل أنت متأكد من حذف سجل الاطلاع هذا؟')) {
-        const studentsLog = JSON.parse(localStorage.getItem('studentsLog')) || [];
-        
-        if (logIndex >= 0 && logIndex < studentsLog.length) {
-            studentsLog.splice(logIndex, 1);
-            localStorage.setItem('studentsLog', JSON.stringify(studentsLog));
-            loadStudentsList();
+        try {
+            await window.supabaseClient.deleteStudentLog(logId);
+            await loadStudentsList();
             alert('تم حذف سجل الاطلاع بنجاح!');
+        } catch (error) {
+            console.error('Error deleting student log:', error);
+            alert('خطأ في حذف سجل الاطلاع');
         }
     }
 }
@@ -674,17 +692,24 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAdminLogin();
 
     // التعامل مع تسجيل الدخول
-    adminLoginForm.addEventListener('submit', function(e) {
+    adminLoginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const username = document.getElementById('adminUsername').value.trim();
         const password = document.getElementById('adminPassword').value.trim();
         
-        if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-            localStorage.setItem('adminLoggedIn', 'true');
-            showAdminPanel();
-        } else {
-            alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+        try {
+            const isValid = await window.supabaseClient.verifyAdmin(username, password);
+            
+            if (isValid) {
+                localStorage.setItem('adminLoggedIn', 'true');
+                showAdminPanel();
+            } else {
+                alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+            }
+        } catch (error) {
+            console.error('Error during login:', error);
+            alert('حدث خطأ أثناء تسجيل الدخول');
         }
     });
 
@@ -754,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // حفظ تعديلات الزائر
     if (editStudentForm) {
-        editStudentForm.addEventListener('submit', function(e) {
+        editStudentForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const originalId = document.getElementById('editStudentOriginalId').value;
@@ -777,10 +802,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            updateStudentData(originalId, { name, id, phone });
-            document.getElementById('editStudentModal').classList.add('hidden');
-            loadStudentsData();
-            alert('تم تحديث بيانات الزائر بنجاح!');
+            try {
+                await window.supabaseClient.updateStudentData(originalId, { name, id, phone });
+                document.getElementById('editStudentModal').classList.add('hidden');
+                await loadStudentsData();
+                alert('تم تحديث بيانات الزائر بنجاح!');
+            } catch (error) {
+                console.error('Error updating student data:', error);
+                alert('خطأ في تحديث بيانات الزائر');
+            }
         });
     }
 
@@ -791,14 +821,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function showAdminPanel() {
+    async function showAdminPanel() {
         if (adminLoginSection) adminLoginSection.classList.add('hidden');
         if (adminPanel) adminPanel.classList.remove('hidden');
-        loadFilesList();
-        loadStudentsList();
-        loadStudentsData();
-        loadTicketsData();
-        updateTicketsStats();
+        await loadFilesList();
+        await loadStudentsList();
+        await loadStudentsData();
+        await loadTicketsData();
+        await updateTicketsStats();
     }
 
     function handleContentTypeChange() {
@@ -833,7 +863,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function handleUploadForm(e) {
+    async function handleUploadForm(e) {
         e.preventDefault();
         
         const type = contentType.value;
@@ -852,6 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'file':
                 const file = document.getElementById('contentFile').files[0];
                 if (file) {
+                    // في بيئة حقيقية، يجب رفع الملف إلى خدمة تخزين
                     content = URL.createObjectURL(file);
                 } else {
                     alert('يرجى اختيار ملف');
@@ -894,72 +925,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (title && content) {
-            addNewContent(type, title, content, note);
-            uploadForm.reset();
+            try {
+                await addNewContent(type, title, content, note);
+                uploadForm.reset();
+            } catch (error) {
+                alert('خطأ في إضافة المحتوى');
+            }
         } else {
             alert('يرجى ملء جميع الحقول المطلوبة');
         }
     }
 
-    function addNewContent(type, title, content, note = '') {
-        const contents = getContents();
-        const newContent = {
-            id: Date.now().toString(),
-            type: type,
-            title: title,
-            content: content,
-            note: note,
-            date: new Date().toLocaleString('ar-SA')
-        };
-        
-        contents.push(newContent);
-        localStorage.setItem('adminContents', JSON.stringify(contents));
-        loadFilesList();
-        alert('تم إضافة المحتوى بنجاح!');
-    }
-
-    function updateStudentData(originalId, newData) {
-        const studentsData = getStudentsData();
-        const studentIndex = studentsData.findIndex(s => s.id === originalId);
-        
-        if (studentIndex !== -1) {
-            studentsData[studentIndex] = {
-                ...studentsData[studentIndex],
-                ...newData
-            };
-            
-            if (originalId !== newData.id) {
-                updateStudentsLog(originalId, newData.id, newData.name, newData.phone);
-            }
-            
-            localStorage.setItem('studentsData', JSON.stringify(studentsData));
+    async function addNewContent(type, title, content, note = '') {
+        try {
+            await window.supabaseClient.addContent({
+                type: type,
+                title: title,
+                content: content,
+                note: note
+            });
+            await loadFilesList();
+            alert('تم إضافة المحتوى بنجاح!');
+        } catch (error) {
+            console.error('Error adding content:', error);
+            throw error;
         }
     }
 
-    function updateStudentsLog(oldId, newId, newName, newPhone) {
-        const studentsLog = JSON.parse(localStorage.getItem('studentsLog')) || [];
-        const updatedLog = studentsLog.map(log => {
-            if (log.studentId === oldId) {
-                return {
-                    ...log,
-                    studentId: newId,
-                    studentName: newName,
-                    studentPhone: newPhone
-                };
-            }
-            return log;
-        });
-        localStorage.setItem('studentsLog', JSON.stringify(updatedLog));
-        loadStudentsList();
-    }
-
-    // تحديث البيانات كل 5 ثواني
-    setInterval(() => {
-        loadStudentsList();
-        loadStudentsData();
-        loadTicketsData();
-        updateTicketsStats();
-    }, 5000);
+    // تحديث البيانات كل 10 ثواني
+    setInterval(async () => {
+        if (localStorage.getItem('adminLoggedIn') === 'true') {
+            await loadStudentsList();
+            await loadStudentsData();
+            await loadTicketsData();
+            await updateTicketsStats();
+        }
+    }, 10000);
 });
 
 // جعل جميع الدوال متاحة في النطاق العام
@@ -978,8 +979,3 @@ window.deleteStudent = deleteStudent;
 window.editRating = editRating;
 window.deleteRating = deleteRating;
 window.deleteStudentLog = deleteStudentLog;
-window.getStudentsData = getStudentsData;
-window.getContents = getContents;
-window.loadFilesList = loadFilesList;
-window.loadStudentsList = loadStudentsList;
-window.loadStudentsData = loadStudentsData;

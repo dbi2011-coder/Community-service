@@ -26,11 +26,11 @@
                     <form id="adminLoginForm">
                         <div class="form-group">
                             <label for="adminUsername">اسم المستخدم:</label>
-                            <input type="text" id="adminUsername" required>
+                            <input type="text" id="adminUsername" required value="عمرو بن العاص">
                         </div>
                         <div class="form-group">
                             <label for="adminPassword">كلمة المرور:</label>
-                            <input type="password" id="adminPassword" required>
+                            <input type="password" id="adminPassword" required value="10243">
                         </div>
                         <button type="submit" class="btn">دخول</button>
                     </form>
@@ -54,7 +54,7 @@
                                 </select>
                             </div>
                             
-                            <div class="form-group" id="linkInput">
+                            <div class="form-group hidden" id="linkInput">
                                 <label for="contentLink">رابط المحتوى:</label>
                                 <input type="url" id="contentLink" placeholder="https://example.com">
                             </div>
@@ -97,7 +97,7 @@
                             
                             <div class="form-group">
                                 <label for="contentTitle">عنوان المحتوى:</label>
-                                <input type="text" id="contentTitle" required>
+                                <input type="text" id="contentTitle" required placeholder="أدخل عنوان المحتوى">
                             </div>
                             
                             <button type="submit" class="btn">إضافة المحتوى</button>
@@ -282,7 +282,8 @@
         </div>
     </div>
 
+    <script src="js/main.js"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/admin.js"></script>
-    <script src="js/tickets.js"></script>
 </body>
 </html>

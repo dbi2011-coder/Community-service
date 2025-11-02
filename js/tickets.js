@@ -1,6 +1,17 @@
 // js/tickets.js - الملف المعدل ليعمل مع Supabase
 // نظام إدارة التذاكر
 document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('supabaseReady', initTicketsPage);
+    
+    // إذا كان supabase جاهزاً بالفعل
+    if (window.supabaseClient) {
+        initTicketsPage();
+    }
+});
+
+function initTicketsPage() {
+    console.log('Initializing tickets page...');
+    
     const newTicketForm = document.getElementById('newTicketForm');
     const ticketQueryForm = document.getElementById('ticketQueryForm');
     
@@ -54,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+}
 
 // إنشاء تذكرة جديدة
 async function createNewTicket(title, identity, description) {
@@ -133,7 +144,7 @@ async function viewTicketDetails(ticketId) {
             const detailsContainer = document.getElementById('ticketDetailsContent');
             
             let responseForm = '';
-            if (ticket.status === 'قيد المعالجة') {
+            if (ticket.status !== 'مغلقة') {
                 responseForm = `
                     <div class="visitor-response-section">
                         <h4>إضافة رد</h4>

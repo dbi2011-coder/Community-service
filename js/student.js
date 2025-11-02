@@ -1,3 +1,52 @@
+// js/student.js - إضافة هذا الكود في بداية الملف
+// التحقق من التحميل المزدوج
+if (window.studentPageInitialized) {
+    console.log('⚠️ Student page already initialized, skipping...');
+} else {
+    window.studentPageInitialized = true;
+
+    // الكود الأصلي لـ student.js يبدأ من هنا...
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🎓 Initializing student page...');
+        
+        const loginForm = document.getElementById('studentLoginForm');
+        const contentSection = document.getElementById('contentSection');
+        const ratingSection = document.getElementById('ratingSection');
+        const filesContainer = document.getElementById('filesContainer');
+        const displayVisitorName = document.getElementById('displayVisitorName');
+        const displayVisitorId = document.getElementById('displayVisitorId');
+        const displayVisitorPhone = document.getElementById('displayVisitorPhone');
+        const loginTime = document.getElementById('loginTime');
+        
+        let currentStudent = {
+            name: '',
+            id: '',
+            phone: ''
+        };
+        
+        let currentRating = 0;
+        let currentContentId = '';
+        let currentContentTitle = '';
+        let currentLogId = '';
+
+        // الانتظار حتى يكون Supabase جاهزاً
+        document.addEventListener('supabaseReady', initStudentPage);
+        
+        // إذا كان supabase جاهزاً بالفعل
+        if (window.supabaseClient && window.isSupabaseInitialized) {
+            console.log('✅ Supabase already ready, initializing student page...');
+            setTimeout(initStudentPage, 100);
+        }
+
+        function initStudentPage() {
+            console.log('🎓 Student page initialized successfully');
+            setupRatingSystem();
+        }
+
+        // باقي الكود كما هو...
+        // [يتبع نفس الكود السابق لـ student.js]
+    });
+}
 // js/student.js - الملف المعدل
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('studentLoginForm');
@@ -446,3 +495,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 });
+

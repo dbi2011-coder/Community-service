@@ -1,14 +1,12 @@
+// js/tickets.js - الملف المعدل ليعمل مع Supabase
 // نظام إدارة التذاكر
 document.addEventListener('DOMContentLoaded', function() {
     const newTicketForm = document.getElementById('newTicketForm');
     const ticketQueryForm = document.getElementById('ticketQueryForm');
     
-    // تهيئة نظام التذاكر
-    initializeTicketsSystem();
-
     // إنشاء تذكرة جديدة
     if (newTicketForm) {
-        newTicketForm.addEventListener('submit', function(e) {
+        newTicketForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const title = document.getElementById('ticketTitle').value.trim();
@@ -21,10 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                const ticketId = createNewTicket(title, identity, description);
-                alert(`تم إنشاء التذكرة بنجاح! رقم التذكرة: ${ticketId}\nيرجى حفظ رقم التذكرة للمتابعة.`);
-                newTicketForm.reset();
-                hideAllSections();
+                try {
+                    const ticketId = await createNewTicket(title, identity, description);
+                    alert(`تم إنشاء التذكرة بنجاح! رقم التذكرة: ${ticketId}\nيرجى حفظ رقم التذكرة للمتابعة.`);
+                    newTicketForm.reset();
+                    hideAllSections();
+                } catch (error) {
+                    console.error('Error creating ticket:', error);
+                    alert('خطأ في إنشاء التذكرة');
+                }
             } else {
                 alert('يرجى ملء جميع الحقول المطلوبة');
             }
@@ -33,14 +36,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // استعلام عن تذكرة
     if (ticketQueryForm) {
-        ticketQueryForm.addEventListener('submit', function(e) {
+        ticketQueryForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const ticketId = document.getElementById('queryTicketId').value.trim();
             const identity = document.getElementById('queryIdentity').value.trim();
             
             if (ticketId || identity) {
-                searchTickets(ticketId, identity);
+                try {
+                    await searchTickets(ticketId, identity);
+                } catch (error) {
+                    console.error('Error searching tickets:', error);
+                    alert('خطأ في البحث عن التذاكر');
+                }
             } else {
                 alert('يرجى إدخال رقم التذكرة أو رقم الهوية');
             }
@@ -48,16 +56,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// تهيئة نظام التذاكر
-function initializeTicketsSystem() {
-    if (!localStorage.getItem('supportTickets')) {
-        localStorage.setItem('supportTickets', JSON.stringify([]));
-    }
-}
-
 // إنشاء تذكرة جديدة
-function createNewTicket(title, identity, description) {
-    const tickets = getTickets();
+async function createNewTicket(title, identity, description) {
     const ticketId = 'T' + Date.now().toString().slice(-8);
     
     const newTicket = {
@@ -65,22 +65,17 @@ function createNewTicket(title, identity, description) {
         title: title,
         identity: identity,
         description: description,
-        status: 'مفتوحة', // مفتوحة، قيد المعالجة، مغلقة
-        createdDate: new Date().toLocaleString('ar-SA'),
-        createdTimestamp: Date.now(),
-        responses: [],
-        lastUpdate: new Date().toLocaleString('ar-SA')
+        status: 'مفتوحة',
+        responses: []
     };
     
-    tickets.push(newTicket);
-    localStorage.setItem('supportTickets', JSON.stringify(tickets));
-    
+    await window.supabaseClient.createTicket(newTicket);
     return ticketId;
 }
 
 // البحث عن التذاكر
-function searchTickets(ticketId, identity) {
-    const tickets = getTickets();
+async function searchTickets(ticketId, identity) {
+    const tickets = await window.supabaseClient.getTickets();
     let results = [];
     
     if (ticketId) {
@@ -129,65 +124,70 @@ function displayTicketResults(results) {
 }
 
 // عرض تفاصيل التذكرة للزائر
-function viewTicketDetails(ticketId) {
-    const tickets = getTickets();
-    const ticket = tickets.find(t => t.id === ticketId);
-    
-    if (ticket) {
-        const detailsContainer = document.getElementById('ticketDetailsContent');
+async function viewTicketDetails(ticketId) {
+    try {
+        const tickets = await window.supabaseClient.getTickets();
+        const ticket = tickets.find(t => t.id === ticketId);
         
-        let responseForm = '';
-        if (ticket.status === 'قيد المعالجة') {
-            responseForm = `
-                <div class="visitor-response-section">
-                    <h4>إضافة رد</h4>
-                    <textarea id="visitorResponseMessage" rows="3" placeholder="أدخل ردك هنا..."></textarea>
-                    <button class="btn" onclick="addVisitorResponse('${ticket.id}')">إرسال الرد</button>
+        if (ticket) {
+            const detailsContainer = document.getElementById('ticketDetailsContent');
+            
+            let responseForm = '';
+            if (ticket.status === 'قيد المعالجة') {
+                responseForm = `
+                    <div class="visitor-response-section">
+                        <h4>إضافة رد</h4>
+                        <textarea id="visitorResponseMessage" rows="3" placeholder="أدخل ردك هنا..."></textarea>
+                        <button class="btn" onclick="addVisitorResponse('${ticket.id}')">إرسال الرد</button>
+                    </div>
+                `;
+            }
+            
+            detailsContainer.innerHTML = `
+                <div class="ticket-detail-card">
+                    <div class="ticket-detail-header">
+                        <h3>${ticket.title} <span class="ticket-id">#${ticket.id}</span></h3>
+                        <span class="ticket-status ${getStatusClass(ticket.status)}">${ticket.status}</span>
+                    </div>
+                    <div class="ticket-detail-info">
+                        <p><strong>رقم الهوية:</strong> ${ticket.identity}</p>
+                        <p><strong>تاريخ الإنشاء:</strong> ${ticket.createdDate}</p>
+                        <p><strong>آخر تحديث:</strong> ${ticket.lastUpdate}</p>
+                    </div>
+                    <div class="ticket-description">
+                        <h4>وصف المشكلة:</h4>
+                        <p>${ticket.description}</p>
+                    </div>
+                    ${ticket.responses.length > 0 ? `
+                        <div class="ticket-responses">
+                            <h4>سجل المحادثة:</h4>
+                            ${ticket.responses.map(response => `
+                                <div class="response-item ${response.responder === 'الزائر' ? 'visitor-response' : 'admin-response'}">
+                                    <div class="response-header">
+                                        <strong>${response.responder}</strong>
+                                        <span class="response-date">${response.date}</span>
+                                    </div>
+                                    <p class="response-message">${response.message}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p class="no-responses">لا توجد ردود حتى الآن</p>'}
+                    ${responseForm}
                 </div>
             `;
+            
+            document.getElementById('ticketQuerySection').classList.add('hidden');
+            document.getElementById('ticketResults').classList.add('hidden');
+            document.getElementById('ticketDetailsSection').classList.remove('hidden');
         }
-        
-        detailsContainer.innerHTML = `
-            <div class="ticket-detail-card">
-                <div class="ticket-detail-header">
-                    <h3>${ticket.title} <span class="ticket-id">#${ticket.id}</span></h3>
-                    <span class="ticket-status ${getStatusClass(ticket.status)}">${ticket.status}</span>
-                </div>
-                <div class="ticket-detail-info">
-                    <p><strong>رقم الهوية:</strong> ${ticket.identity}</p>
-                    <p><strong>تاريخ الإنشاء:</strong> ${ticket.createdDate}</p>
-                    <p><strong>آخر تحديث:</strong> ${ticket.lastUpdate}</p>
-                </div>
-                <div class="ticket-description">
-                    <h4>وصف المشكلة:</h4>
-                    <p>${ticket.description}</p>
-                </div>
-                ${ticket.responses.length > 0 ? `
-                    <div class="ticket-responses">
-                        <h4>سجل المحادثة:</h4>
-                        ${ticket.responses.map(response => `
-                            <div class="response-item ${response.responder === 'الزائر' ? 'visitor-response' : 'admin-response'}">
-                                <div class="response-header">
-                                    <strong>${response.responder}</strong>
-                                    <span class="response-date">${response.date}</span>
-                                </div>
-                                <p class="response-message">${response.message}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : '<p class="no-responses">لا توجد ردود حتى الآن</p>'}
-                ${responseForm}
-            </div>
-        `;
-        
-        document.getElementById('ticketQuerySection').classList.add('hidden');
-        document.getElementById('ticketResults').classList.add('hidden');
-        document.getElementById('ticketDetailsSection').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error viewing ticket details:', error);
+        alert('خطأ في عرض تفاصيل التذكرة');
     }
 }
 
 // إضافة رد من الزائر
-function addVisitorResponse(ticketId) {
+async function addVisitorResponse(ticketId) {
     const responseMessage = document.getElementById('visitorResponseMessage').value.trim();
     
     if (!responseMessage) {
@@ -195,29 +195,31 @@ function addVisitorResponse(ticketId) {
         return;
     }
     
-    const tickets = getTickets();
-    const ticketIndex = tickets.findIndex(t => t.id === ticketId);
-    
-    if (ticketIndex !== -1) {
-        tickets[ticketIndex].responses.push({
-            responder: 'الزائر',
-            message: responseMessage,
-            date: new Date().toLocaleString('ar-SA')
-        });
+    try {
+        const tickets = await window.supabaseClient.getTickets();
+        const ticket = tickets.find(t => t.id === ticketId);
         
-        tickets[ticketIndex].lastUpdate = new Date().toLocaleString('ar-SA');
-        localStorage.setItem('supportTickets', JSON.stringify(tickets));
-        
-        document.getElementById('visitorResponseMessage').value = '';
-        viewTicketDetails(ticketId);
-        
-        alert('تم إرسال ردك بنجاح');
+        if (ticket) {
+            const responses = [...ticket.responses, {
+                responder: 'الزائر',
+                message: responseMessage,
+                date: new Date().toLocaleString('ar-SA')
+            }];
+            
+            await window.supabaseClient.updateTicket(ticketId, {
+                responses: responses,
+                last_update: new Date().toISOString()
+            });
+            
+            document.getElementById('visitorResponseMessage').value = '';
+            await viewTicketDetails(ticketId);
+            
+            alert('تم إرسال ردك بنجاح');
+        }
+    } catch (error) {
+        console.error('Error adding visitor response:', error);
+        alert('خطأ في إرسال الرد');
     }
-}
-
-// الحصول على جميع التذاكر
-function getTickets() {
-    return JSON.parse(localStorage.getItem('supportTickets')) || [];
 }
 
 // الحصول على فئة الحالة

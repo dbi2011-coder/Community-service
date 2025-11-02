@@ -1,3 +1,4 @@
+// js/student.js - الملف المعدل ليعمل مع Supabase
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('studentLoginForm');
     const contentSection = document.getElementById('contentSection');
@@ -17,8 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentRating = 0;
     let currentContentId = '';
     let currentContentTitle = '';
+    let currentLogId = '';
 
-    loginForm.addEventListener('submit', function(e) {
+    loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         const studentName = document.getElementById('studentName').value.trim();
         const studentId = document.getElementById('studentId').value.trim();
@@ -36,44 +38,54 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // التحقق من تطابق البيانات إذا كان الزائر مسجل مسبقاً
-            const existingStudent = checkExistingStudent(studentId, studentName, studentPhone);
-            if (existingStudent === 'mismatch') {
-                alert('البيانات لا تتطابق مع السجل السابق. يرجى التأكد من الاسم ورقم الجوال، أو التواصل مع مشرف البرنامج في حال النسيان.');
-                return;
+            try {
+                const existingStudent = await checkExistingStudent(studentId, studentName, studentPhone);
+                if (existingStudent === 'mismatch') {
+                    alert('البيانات لا تتطابق مع السجل السابق. يرجى التأكد من الاسم ورقم الجوال، أو التواصل مع مشرف البرنامج في حال النسيان.');
+                    return;
+                }
+                
+                currentStudent = {
+                    name: studentName,
+                    id: studentId,
+                    phone: studentPhone
+                };
+                
+                await saveStudentData(currentStudent);
+                
+                displayVisitorName.textContent = currentStudent.name;
+                displayVisitorId.textContent = currentStudent.id;
+                displayVisitorPhone.textContent = currentStudent.phone;
+                loginTime.textContent = new Date().toLocaleString('ar-SA');
+                
+                loginForm.classList.add('hidden');
+                contentSection.classList.remove('hidden');
+                await loadStudentContents();
+            } catch (error) {
+                console.error('Error during login:', error);
+                alert('حدث خطأ أثناء تسجيل الدخول');
             }
-            
-            currentStudent = {
-                name: studentName,
-                id: studentId,
-                phone: studentPhone
-            };
-            
-            saveStudentData(currentStudent);
-            
-            displayVisitorName.textContent = currentStudent.name;
-            displayVisitorId.textContent = currentStudent.id;
-            displayVisitorPhone.textContent = currentStudent.phone;
-            loginTime.textContent = new Date().toLocaleString('ar-SA');
-            
-            loginForm.classList.add('hidden');
-            contentSection.classList.remove('hidden');
-            loadStudentContents();
         } else {
             alert('يرجى ملء جميع الحقول المطلوبة');
         }
     });
     
     // التحقق من بيانات الزائر المسجل مسبقاً
-    function checkExistingStudent(studentId, studentName, studentPhone) {
-        const studentsData = getStudentsData();
-        const existingStudent = studentsData.find(s => s.id === studentId);
-        
-        if (existingStudent) {
-            if (existingStudent.name !== studentName || existingStudent.phone !== studentPhone) {
-                return 'mismatch';
+    async function checkExistingStudent(studentId, studentName, studentPhone) {
+        try {
+            const studentsData = await window.supabaseClient.getStudentsData();
+            const existingStudent = studentsData.find(s => s.id === studentId);
+            
+            if (existingStudent) {
+                if (existingStudent.name !== studentName || existingStudent.phone !== studentPhone) {
+                    return 'mismatch';
+                }
             }
+            return 'match';
+        } catch (error) {
+            console.error('Error checking existing student:', error);
+            return 'match'; // في حالة الخطأ، نسمح بالدخول
         }
-        return 'match';
     }
 
     // نظام التقييم
@@ -132,13 +144,18 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        submitRatingBtn.addEventListener('click', function() {
+        submitRatingBtn.addEventListener('click', async function() {
             const notes = document.getElementById('ratingNotes').value.trim();
-            saveRating(currentContentId, currentContentTitle, currentRating, notes);
-            contentSection.classList.remove('hidden');
-            ratingSection.classList.add('hidden');
-            loadStudentContents();
-            alert('شكراً لك على تقييمك!');
+            try {
+                await saveRating(currentLogId, currentRating, notes);
+                contentSection.classList.remove('hidden');
+                ratingSection.classList.add('hidden');
+                await loadStudentContents();
+                alert('شكراً لك على تقييمك!');
+            } catch (error) {
+                console.error('Error saving rating:', error);
+                alert('خطأ في حفظ التقييم');
+            }
         });
         
         skipRatingBtn.addEventListener('click', function() {
@@ -148,82 +165,80 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function saveRating(contentId, contentTitle, rating, notes) {
-        const studentsLog = getStudentLogs();
-        const logIndex = studentsLog.findIndex(log => 
-            log.studentId === currentStudent.id && 
-            log.contentId === contentId &&
-            !log.rating // البحث عن السجل الذي لم يتم تقييمه بعد
-        );
-        
-        if (logIndex !== -1) {
-            studentsLog[logIndex].rating = rating;
-            studentsLog[logIndex].ratingNotes = notes;
-            studentsLog[logIndex].ratingDate = new Date().toLocaleString('ar-SA');
-            localStorage.setItem('studentsLog', JSON.stringify(studentsLog));
+    async function saveRating(logId, rating, notes) {
+        try {
+            await window.supabaseClient.updateStudentRating(logId, rating, notes);
+        } catch (error) {
+            console.error('Error saving rating:', error);
+            throw error;
         }
     }
     
-    function loadStudentContents() {
-        const contents = getContents();
-        const studentLogs = getStudentLogs();
-        
-        filesContainer.innerHTML = '';
-        
-        if (contents.length === 0) {
-            filesContainer.innerHTML = '<p>لا توجد محتويات متاحة حالياً.</p>';
-            return;
-        }
-        
-        contents.forEach(content => {
-            const hasViewed = studentLogs.some(log => 
-                log.studentId === currentStudent.id && log.contentId === content.id
-            );
+    async function loadStudentContents() {
+        try {
+            const contents = await window.supabaseClient.getContents();
+            const studentLogs = await window.supabaseClient.getStudentsLog();
             
-            const contentElement = document.createElement('div');
-            contentElement.className = `student-file-item ${hasViewed ? 'viewed' : ''}`;
-            contentElement.innerHTML = `
-                <div class="file-header">
-                    <h3>${content.title}</h3>
-                    <span class="status">${hasViewed ? 'تم الاطلاع ✓' : 'لم يتم الاطلاع'}</span>
-                </div>
-                <div class="file-content">
-                    ${renderContent(content)}
-                </div>
-                <div class="file-actions">
-                    ${!hasViewed ? `
-                        <div class="agreement-section">
-                            <label class="checkbox-container">
-                                <input type="checkbox" id="agreement-${content.id}" class="agreement-checkbox">
-                                <span class="checkmark"></span>
-                                نعم اطلعت على المحتوى المرفق
-                            </label>
-                            <button class="btn view-btn" onclick="viewContent('${content.id}', '${content.title}')" disabled>
-                                تأكيد الاطلاع
-                            </button>
-                        </div>
-                    ` : `
-                        <p class="viewed-message">تم تأكيد الاطلاع في: ${getViewDate(studentLogs, content.id)}</p>
-                        ${getRatingDisplay(studentLogs, content.id)}
-                    `}
-                </div>
-            `;
-            filesContainer.appendChild(contentElement);
+            filesContainer.innerHTML = '';
             
-            if (!hasViewed) {
-                const checkbox = document.getElementById(`agreement-${content.id}`);
-                const viewBtn = contentElement.querySelector('.view-btn');
-                
-                checkbox.addEventListener('change', function() {
-                    viewBtn.disabled = !this.checked;
-                    if (this.checked) {
-                        this.parentElement.classList.add('checked');
-                    } else {
-                        this.parentElement.classList.remove('checked');
-                    }
-                });
+            if (contents.length === 0) {
+                filesContainer.innerHTML = '<p>لا توجد محتويات متاحة حالياً.</p>';
+                return;
             }
-        });
+            
+            contents.forEach(content => {
+                const hasViewed = studentLogs.some(log => 
+                    log.studentId === currentStudent.id && log.contentId === content.id
+                );
+                
+                const contentElement = document.createElement('div');
+                contentElement.className = `student-file-item ${hasViewed ? 'viewed' : ''}`;
+                contentElement.innerHTML = `
+                    <div class="file-header">
+                        <h3>${content.title}</h3>
+                        <span class="status">${hasViewed ? 'تم الاطلاع ✓' : 'لم يتم الاطلاع'}</span>
+                    </div>
+                    <div class="file-content">
+                        ${renderContent(content)}
+                    </div>
+                    <div class="file-actions">
+                        ${!hasViewed ? `
+                            <div class="agreement-section">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="agreement-${content.id}" class="agreement-checkbox">
+                                    <span class="checkmark"></span>
+                                    نعم اطلعت على المحتوى المرفق
+                                </label>
+                                <button class="btn view-btn" onclick="viewContent('${content.id}', '${content.title}')" disabled>
+                                    تأكيد الاطلاع
+                                </button>
+                            </div>
+                        ` : `
+                            <p class="viewed-message">تم تأكيد الاطلاع في: ${getViewDate(studentLogs, content.id)}</p>
+                            ${getRatingDisplay(studentLogs, content.id)}
+                        `}
+                    </div>
+                `;
+                filesContainer.appendChild(contentElement);
+                
+                if (!hasViewed) {
+                    const checkbox = document.getElementById(`agreement-${content.id}`);
+                    const viewBtn = contentElement.querySelector('.view-btn');
+                    
+                    checkbox.addEventListener('change', function() {
+                        viewBtn.disabled = !this.checked;
+                        if (this.checked) {
+                            this.parentElement.classList.add('checked');
+                        } else {
+                            this.parentElement.classList.remove('checked');
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Error loading student contents:', error);
+            filesContainer.innerHTML = '<p>خطأ في تحميل المحتويات</p>';
+        }
     }
     
     function renderContent(content) {
@@ -237,7 +252,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </div>`;
             case 'file':
-                // إصلاح مشكلة تنزيل الملفات
                 const fileName = content.title + getFileExtension(content.content);
                 return `
                     <div class="content-preview">
@@ -310,25 +324,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return '';
     }
     
-    function getRatingText(rating) {
-        const ratings = {
-            1: 'ضعيف',
-            2: 'مقبول',
-            3: 'جيد',
-            4: 'جيد جداً',
-            5: 'ممتاز'
-        };
-        return ratings[rating] || 'غير معروف';
-    }
-    
-    function getContents() {
-        return JSON.parse(localStorage.getItem('adminContents')) || [];
-    }
-    
-    function getStudentLogs() {
-        return JSON.parse(localStorage.getItem('studentsLog')) || [];
-    }
-    
     function getViewDate(logs, contentId) {
         const log = logs.find(log => 
             log.studentId === currentStudent.id && log.contentId === contentId
@@ -336,23 +331,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return log ? `${log.date} ${log.time}` : '';
     }
     
-    function saveStudentData(student) {
-        const studentsData = getStudentsData();
-        const existingStudent = studentsData.find(s => s.id === student.id);
-        
-        if (!existingStudent) {
-            studentsData.push({
-                name: student.name,
-                id: student.id,
-                phone: student.phone,
-                firstLogin: new Date().toLocaleString('ar-SA')
-            });
-            localStorage.setItem('studentsData', JSON.stringify(studentsData));
+    async function saveStudentData(student) {
+        try {
+            await window.supabaseClient.saveStudentData(student);
+        } catch (error) {
+            console.error('Error saving student data:', error);
+            throw error;
         }
-    }
-    
-    function getStudentsData() {
-        return JSON.parse(localStorage.getItem('studentsData')) || [];
     }
     
     function isValidId(id) {
@@ -377,49 +362,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // دالة لتسجيل تحميل الملفات
     function handleFileDownload(contentId, contentTitle) {
-        // يمكن إضافة تسجيل لتحميل الملفات إذا لزم الأمر
         console.log(`تم تحميل الملف: ${contentTitle} (${contentId})`);
     }
     
-    window.viewContent = function(contentId, contentTitle) {
-        const studentsLog = getStudentLogs();
-        const now = new Date();
-        
-        studentsLog.push({
-            studentName: currentStudent.name,
-            studentId: currentStudent.id,
-            studentPhone: currentStudent.phone,
-            contentId: contentId,
-            contentTitle: contentTitle,
-            date: now.toLocaleDateString('ar-SA'),
-            time: now.toLocaleTimeString('ar-SA'),
-            timestamp: now.getTime(),
-            rating: 0, // سيتم تحديثه لاحقاً
-            ratingNotes: '',
-            ratingDate: ''
-        });
-        
-        localStorage.setItem('studentsLog', JSON.stringify(studentsLog));
-        
-        // إعداد نظام التقييم
-        currentContentId = contentId;
-        currentContentTitle = contentTitle;
-        currentRating = 0;
-        
-        // تحديث عنوان المحتوى في واجهة التقييم
-        document.getElementById('ratingContentTitle').textContent = contentTitle;
-        
-        // إعادة تعيين النجوم
-        document.querySelectorAll('.star').forEach(star => {
-            star.classList.remove('active');
-        });
-        document.getElementById('ratingNotes').value = '';
-        document.getElementById('currentRatingText').textContent = 'لم يتم اختيار تقييم بعد';
-        document.getElementById('submitRating').disabled = true;
-        
-        // إظهار قسم التقييم وإخفاء المحتوى
-        contentSection.classList.add('hidden');
-        ratingSection.classList.remove('hidden');
+    window.viewContent = async function(contentId, contentTitle) {
+        try {
+            const logData = {
+                studentName: currentStudent.name,
+                studentId: currentStudent.id,
+                studentPhone: currentStudent.phone,
+                contentId: contentId,
+                contentTitle: contentTitle
+            };
+            
+            const result = await window.supabaseClient.addStudentLog(logData);
+            currentLogId = result.id;
+            
+            // إعداد نظام التقييم
+            currentContentId = contentId;
+            currentContentTitle = contentTitle;
+            currentRating = 0;
+            
+            // تحديث عنوان المحتوى في واجهة التقييم
+            document.getElementById('ratingContentTitle').textContent = contentTitle;
+            
+            // إعادة تعيين النجوم
+            document.querySelectorAll('.star').forEach(star => {
+                star.classList.remove('active');
+            });
+            document.getElementById('ratingNotes').value = '';
+            document.getElementById('currentRatingText').textContent = 'لم يتم اختيار تقييم بعد';
+            document.getElementById('submitRating').disabled = true;
+            
+            // إظهار قسم التقييم وإخفاء المحتوى
+            contentSection.classList.add('hidden');
+            ratingSection.classList.remove('hidden');
+        } catch (error) {
+            console.error('Error viewing content:', error);
+            alert('خطأ في تأكيد الاطلاع');
+        }
     };
 
     // تهيئة نظام التقييم عند تحميل الصفحة

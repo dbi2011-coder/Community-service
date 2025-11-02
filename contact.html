@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اتصل بنا - مشروع الخدمة المجتمعية</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <img src="assets/logo.png" alt="شعار المشروع" id="logo-img" onerror="this.style.display='none'">
+            </div>
+            <h1>مركز الدعم والاستفسارات</h1>
+            <div class="credits">
+                <p>إعداد وتصميم: أ/ صالح عبد العزيز عبد الله العجلان</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="contact-options">
+                <div class="option-card" onclick="showNewTicketSection()">
+                    <h2>إنشاء تذكرة جديدة</h2>
+                    <p>للاستفسارات والمشاكل الفنية</p>
+                </div>
+                
+                <div class="option-card" onclick="showTicketQuerySection()">
+                    <h2>استعلام عن تذكرة</h2>
+                    <p>متابعة حالة التذكرة السابقة</p>
+                </div>
+
+                <div class="option-card" onclick="navigateTo('index.html')">
+                    <h2>العودة للرئيسية</h2>
+                    <p>العودة إلى الصفحة الرئيسية</p>
+                </div>
+            </div>
+
+            <!-- قسم إنشاء تذكرة جديدة -->
+            <div id="newTicketSection" class="hidden">
+                <div class="contact-form">
+                    <h2>إنشاء تذكرة جديدة</h2>
+                    <form id="newTicketForm">
+                        <div class="form-group">
+                            <label for="ticketTitle">عنوان التذكرة:</label>
+                            <input type="text" id="ticketTitle" required placeholder="أدخل عنواناً واضحاً للمشكلة">
+                        </div>
+                        <div class="form-group">
+                            <label for="ticketIdentity">رقم الهوية:</label>
+                            <input type="text" id="ticketIdentity" required placeholder="أدخل رقم الهوية">
+                        </div>
+                        <div class="form-group">
+                            <label for="ticketDescription">وصف المشكلة:</label>
+                            <textarea id="ticketDescription" rows="5" required placeholder="صف مشكلتك بالتفصيل..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn">إرسال التذكرة</button>
+                            <button type="button" class="btn secondary" onclick="hideAllSections()">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- قسم استعلام عن تذكرة -->
+            <div id="ticketQuerySection" class="hidden">
+                <div class="contact-form">
+                    <h2>استعلام عن تذكرة</h2>
+                    <form id="ticketQueryForm">
+                        <div class="form-group">
+                            <label for="queryTicketId">رقم التذكرة:</label>
+                            <input type="text" id="queryTicketId" placeholder="أدخل رقم التذكرة">
+                        </div>
+                        <div class="form-group">
+                            <label for="queryIdentity">أو رقم الهوية:</label>
+                            <input type="text" id="queryIdentity" placeholder="أدخل رقم الهوية">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn">بحث</button>
+                            <button type="button" class="btn secondary" onclick="hideAllSections()">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- نتائج البحث -->
+                <div id="ticketResults" class="hidden">
+                    <h3>نتائج البحث</h3>
+                    <div id="ticketResultsList">
+                        <!-- سيتم ملؤها بالنتائج -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم عرض تفاصيل التذكرة -->
+            <div id="ticketDetailsSection" class="hidden">
+                <div class="ticket-details">
+                    <h2>تفاصيل التذكرة</h2>
+                    <div id="ticketDetailsContent">
+                        <!-- سيتم ملؤها بتفاصيل التذكرة -->
+                    </div>
+                    <button class="btn secondary" onclick="showTicketQuerySection()">العودة للبحث</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/tickets.js"></script>
+    <script>
+        function showNewTicketSection() {
+            hideAllSections();
+            document.getElementById('newTicketSection').classList.remove('hidden');
+        }
+
+        function showTicketQuerySection() {
+            hideAllSections();
+            document.getElementById('ticketQuerySection').classList.remove('hidden');
+        }
+
+        function hideAllSections() {
+            document.getElementById('newTicketSection').classList.add('hidden');
+            document.getElementById('ticketQuerySection').classList.add('hidden');
+            document.getElementById('ticketResults').classList.add('hidden');
+            document.getElementById('ticketDetailsSection').classList.add('hidden');
+        }
+
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+    </script>
+</body>
+</html>

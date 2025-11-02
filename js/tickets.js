@@ -1,3 +1,27 @@
+// js/tickets.js - إضافة هذا الكود في بداية الملف
+// التحقق من التحميل المزدوج
+if (window.ticketsPageInitialized) {
+    console.log('⚠️ Tickets page already initialized, skipping...');
+} else {
+    window.ticketsPageInitialized = true;
+
+    // الكود الأصلي لـ tickets.js يبدأ من هنا...
+    // نظام إدارة التذاكر
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🎫 Initializing tickets page...');
+        
+        document.addEventListener('supabaseReady', initTicketsPage);
+        
+        // إذا كان supabase جاهزاً بالفعل
+        if (window.supabaseClient && window.isSupabaseInitialized) {
+            console.log('✅ Supabase already ready, initializing tickets page...');
+            setTimeout(initTicketsPage, 100);
+        }
+    });
+
+    // باقي الكود كما هو...
+    // [يتبع نفس الكود السابق لـ tickets.js]
+}
 // js/tickets.js - الملف المعدل ليعمل مع Supabase
 // نظام إدارة التذاكر
 document.addEventListener('DOMContentLoaded', function() {

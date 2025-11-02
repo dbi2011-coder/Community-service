@@ -8,6 +8,190 @@ const ADMIN_CREDENTIALS = {
 // متغيرات عامة
 let currentSortOrder = 'date';
 
+// دالة للتحقق من تحميل Supabase
+function waitForSupabase() {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        const checkSupabase = () => {
+            if (window.supabaseClient && window.supabase) {
+                resolve();
+            } else if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(checkSupabase, 100);
+            } else {
+                reject(new Error('Supabase failed to load'));
+            }
+        };
+        checkSupabase();
+    });
+}
+
+// الانتظار حتى يكون Supabase جاهزاً
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('supabaseReady', initAdminPage);
+    
+    // إذا كان supabase جاهزاً بالفعل
+    if (window.supabaseClient) {
+        initAdminPage();
+    }
+});
+
+function initAdminPage() {
+    console.log('Initializing admin page...');
+    
+    const adminLoginSection = document.getElementById('adminLoginSection');
+    const adminPanel = document.getElementById('adminPanel');
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    const contentType = document.getElementById('contentType');
+    const uploadForm = document.getElementById('uploadForm');
+    const searchStudent = document.getElementById('searchStudent');
+    const editStudentForm = document.getElementById('editStudentForm');
+    const cancelEdit = document.getElementById('cancelEdit');
+    const closeModal = document.querySelector('.close-modal');
+    const printVisitorsBtn = document.getElementById('printVisitorsBtn');
+    const printContentsBtn = document.getElementById('printContentsBtn');
+    const searchTickets = document.getElementById('searchTickets');
+    const sortOrder = document.getElementById('sortOrder');
+
+    // التحقق من حالة تسجيل الدخول
+    checkAdminLogin();
+
+    // التعامل مع تسجيل الدخول
+    adminLoginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('adminUsername').value.trim();
+        const password = document.getElementById('adminPassword').value.trim();
+        
+        try {
+            const isValid = await window.supabaseClient.verifyAdmin(username, password);
+            
+            if (isValid) {
+                localStorage.setItem('adminLoggedIn', 'true');
+                showAdminPanel();
+            } else {
+                alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+            }
+        } catch (error) {
+            console.error('Error during login:', error);
+            alert('حدث خطأ أثناء تسجيل الدخول');
+        }
+    });
+
+    // التعامل مع تغيير نوع المحتوى
+    if (contentType) {
+        contentType.addEventListener('change', handleContentTypeChange);
+    }
+
+    // التعامل مع رفع المحتوى
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', handleUploadForm);
+    }
+
+    // أزرار الطباعة
+    if (printVisitorsBtn) {
+        printVisitorsBtn.addEventListener('click', printVisitorsList);
+    }
+
+    if (printContentsBtn) {
+        printContentsBtn.addEventListener('click', printContentsList);
+    }
+
+    // البحث عن زائر
+    if (searchStudent) {
+        searchStudent.addEventListener('input', function() {
+            loadStudentsData(this.value.trim());
+        });
+    }
+
+    // البحث في التذاكر
+    if (searchTickets) {
+        searchTickets.addEventListener('input', function() {
+            loadTicketsData(this.value.trim());
+        });
+    }
+
+    // الترتيب في سجل المطلعين
+    if (sortOrder) {
+        sortOrder.addEventListener('change', function() {
+            currentSortOrder = this.value;
+            loadStudentsList();
+        });
+    }
+
+    // إغلاق نافذة التعديل
+    if (closeModal) {
+        closeModal.addEventListener('click', function() {
+            document.getElementById('editStudentModal').classList.add('hidden');
+        });
+    }
+
+    if (cancelEdit) {
+        cancelEdit.addEventListener('click', function() {
+            document.getElementById('editStudentModal').classList.add('hidden');
+        });
+    }
+
+    // إغلاق النافذة عند النقر خارجها
+    const editStudentModal = document.getElementById('editStudentModal');
+    if (editStudentModal) {
+        editStudentModal.addEventListener('click', function(e) {
+            if (e.target === editStudentModal) {
+                editStudentModal.classList.add('hidden');
+            }
+        });
+    }
+
+    // حفظ تعديلات الزائر
+    if (editStudentForm) {
+        editStudentForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const originalId = document.getElementById('editStudentOriginalId').value;
+            const name = document.getElementById('editStudentName').value.trim();
+            const id = document.getElementById('editStudentId').value.trim();
+            const phone = document.getElementById('editStudentPhone').value.trim();
+            
+            if (!name || !id || !phone) {
+                alert('يرجى ملء جميع الحقول');
+                return;
+            }
+            
+            if (!isValidId(id)) {
+                alert('يرجى إدخال رقم هوية صحيح (10 أرقام)');
+                return;
+            }
+            
+            if (!isValidPhone(phone)) {
+                alert('يرجى إدخال رقم جوال صحيح');
+                return;
+            }
+            
+            try {
+                await window.supabaseClient.updateStudentData(originalId, { name, id, phone });
+                document.getElementById('editStudentModal').classList.add('hidden');
+                await loadStudentsData();
+                alert('تم تحديث بيانات الزائر بنجاح!');
+            } catch (error) {
+                console.error('Error updating student data:', error);
+                alert('خطأ في تحديث بيانات الزائر');
+            }
+        });
+    }
+
+    // تحديث البيانات كل 10 ثواني
+    setInterval(async () => {
+        if (localStorage.getItem('adminLoggedIn') === 'true') {
+            await loadStudentsList();
+            await loadStudentsData();
+            await loadTicketsData();
+            await updateTicketsStats();
+        }
+    }, 10000);
+}
+
 // دوال مساعدة للتذاكر
 async function getTickets() {
     return await window.supabaseClient.getTickets();
@@ -672,296 +856,146 @@ async function deleteStudentLog(logId) {
     }
 }
 
-// التهيئة الرئيسية
-document.addEventListener('DOMContentLoaded', function() {
+// وظائف مساعدة
+function checkAdminLogin() {
+    if (localStorage.getItem('adminLoggedIn') === 'true') {
+        showAdminPanel();
+    }
+}
+
+async function showAdminPanel() {
     const adminLoginSection = document.getElementById('adminLoginSection');
     const adminPanel = document.getElementById('adminPanel');
-    const adminLoginForm = document.getElementById('adminLoginForm');
-    const contentType = document.getElementById('contentType');
-    const uploadForm = document.getElementById('uploadForm');
-    const searchStudent = document.getElementById('searchStudent');
-    const editStudentForm = document.getElementById('editStudentForm');
-    const cancelEdit = document.getElementById('cancelEdit');
-    const closeModal = document.querySelector('.close-modal');
-    const printVisitorsBtn = document.getElementById('printVisitorsBtn');
-    const printContentsBtn = document.getElementById('printContentsBtn');
-    const searchTickets = document.getElementById('searchTickets');
-    const sortOrder = document.getElementById('sortOrder');
+    
+    if (adminLoginSection) adminLoginSection.classList.add('hidden');
+    if (adminPanel) adminPanel.classList.remove('hidden');
+    await loadFilesList();
+    await loadStudentsList();
+    await loadStudentsData();
+    await loadTicketsData();
+    await updateTicketsStats();
+}
 
-    // التحقق من حالة تسجيل الدخول
-    checkAdminLogin();
+function handleContentTypeChange() {
+    const linkInput = document.getElementById('linkInput');
+    const fileInput = document.getElementById('fileInput');
+    const textInput = document.getElementById('textInput');
+    const fileWithNoteInput = document.getElementById('fileWithNoteInput');
+    const linkWithNoteInput = document.getElementById('linkWithNoteInput');
+    
+    if (linkInput) linkInput.classList.add('hidden');
+    if (fileInput) fileInput.classList.add('hidden');
+    if (textInput) textInput.classList.add('hidden');
+    if (fileWithNoteInput) fileWithNoteInput.classList.add('hidden');
+    if (linkWithNoteInput) linkWithNoteInput.classList.add('hidden');
+    
+    switch(this.value) {
+        case 'link':
+            if (linkInput) linkInput.classList.remove('hidden');
+            break;
+        case 'file':
+            if (fileInput) fileInput.classList.remove('hidden');
+            break;
+        case 'text':
+            if (textInput) textInput.classList.remove('hidden');
+            break;
+        case 'fileWithNote':
+            if (fileWithNoteInput) fileWithNoteInput.classList.remove('hidden');
+            break;
+        case 'linkWithNote':
+            if (linkWithNoteInput) linkWithNoteInput.classList.remove('hidden');
+            break;
+    }
+}
 
-    // التعامل مع تسجيل الدخول
-    adminLoginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('adminUsername').value.trim();
-        const password = document.getElementById('adminPassword').value.trim();
-        
-        try {
-            const isValid = await window.supabaseClient.verifyAdmin(username, password);
-            
-            if (isValid) {
-                localStorage.setItem('adminLoggedIn', 'true');
-                showAdminPanel();
+async function handleUploadForm(e) {
+    e.preventDefault();
+    
+    const type = document.getElementById('contentType').value;
+    const title = document.getElementById('contentTitle').value.trim();
+    let content = '';
+    let note = '';
+    
+    switch(type) {
+        case 'link':
+            content = document.getElementById('contentLink').value.trim();
+            if (!isValidUrl(content)) {
+                alert('يرجى إدخال رابط صحيح');
+                return;
+            }
+            break;
+        case 'file':
+            const file = document.getElementById('contentFile').files[0];
+            if (file) {
+                // في بيئة حقيقية، يجب رفع الملف إلى خدمة تخزين
+                content = URL.createObjectURL(file);
             } else {
-                alert('اسم المستخدم أو كلمة المرور غير صحيحة');
-            }
-        } catch (error) {
-            console.error('Error during login:', error);
-            alert('حدث خطأ أثناء تسجيل الدخول');
-        }
-    });
-
-    // التعامل مع تغيير نوع المحتوى
-    if (contentType) {
-        contentType.addEventListener('change', handleContentTypeChange);
-    }
-
-    // التعامل مع رفع المحتوى
-    if (uploadForm) {
-        uploadForm.addEventListener('submit', handleUploadForm);
-    }
-
-    // أزرار الطباعة
-    if (printVisitorsBtn) {
-        printVisitorsBtn.addEventListener('click', printVisitorsList);
-    }
-
-    if (printContentsBtn) {
-        printContentsBtn.addEventListener('click', printContentsList);
-    }
-
-    // البحث عن زائر
-    if (searchStudent) {
-        searchStudent.addEventListener('input', function() {
-            loadStudentsData(this.value.trim());
-        });
-    }
-
-    // البحث في التذاكر
-    if (searchTickets) {
-        searchTickets.addEventListener('input', function() {
-            loadTicketsData(this.value.trim());
-        });
-    }
-
-    // الترتيب في سجل المطلعين
-    if (sortOrder) {
-        sortOrder.addEventListener('change', function() {
-            currentSortOrder = this.value;
-            loadStudentsList();
-        });
-    }
-
-    // إغلاق نافذة التعديل
-    if (closeModal) {
-        closeModal.addEventListener('click', function() {
-            document.getElementById('editStudentModal').classList.add('hidden');
-        });
-    }
-
-    if (cancelEdit) {
-        cancelEdit.addEventListener('click', function() {
-            document.getElementById('editStudentModal').classList.add('hidden');
-        });
-    }
-
-    // إغلاق النافذة عند النقر خارجها
-    const editStudentModal = document.getElementById('editStudentModal');
-    if (editStudentModal) {
-        editStudentModal.addEventListener('click', function(e) {
-            if (e.target === editStudentModal) {
-                editStudentModal.classList.add('hidden');
-            }
-        });
-    }
-
-    // حفظ تعديلات الزائر
-    if (editStudentForm) {
-        editStudentForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const originalId = document.getElementById('editStudentOriginalId').value;
-            const name = document.getElementById('editStudentName').value.trim();
-            const id = document.getElementById('editStudentId').value.trim();
-            const phone = document.getElementById('editStudentPhone').value.trim();
-            
-            if (!name || !id || !phone) {
-                alert('يرجى ملء جميع الحقول');
+                alert('يرجى اختيار ملف');
                 return;
             }
-            
-            if (!isValidId(id)) {
-                alert('يرجى إدخال رقم هوية صحيح (10 أرقام)');
+            break;
+        case 'text':
+            content = document.getElementById('contentText').value.trim();
+            if (content.length < 5) {
+                alert('يرجى إدخال نص ذو محتوى');
                 return;
             }
-            
-            if (!isValidPhone(phone)) {
-                alert('يرجى إدخال رقم جوال صحيح');
+            break;
+        case 'fileWithNote':
+            const fileWithNote = document.getElementById('contentFileWithNote').files[0];
+            note = document.getElementById('contentNote').value.trim();
+            if (fileWithNote) {
+                content = URL.createObjectURL(fileWithNote);
+            } else {
+                alert('يرجى اختيار ملف');
                 return;
             }
-            
-            try {
-                await window.supabaseClient.updateStudentData(originalId, { name, id, phone });
-                document.getElementById('editStudentModal').classList.add('hidden');
-                await loadStudentsData();
-                alert('تم تحديث بيانات الزائر بنجاح!');
-            } catch (error) {
-                console.error('Error updating student data:', error);
-                alert('خطأ في تحديث بيانات الزائر');
+            if (note.length < 3) {
+                alert('يرجى إدخال ملاحظة حول الملف');
+                return;
             }
-        });
-    }
-
-    // وظائف مساعدة
-    function checkAdminLogin() {
-        if (localStorage.getItem('adminLoggedIn') === 'true') {
-            showAdminPanel();
-        }
-    }
-
-    async function showAdminPanel() {
-        if (adminLoginSection) adminLoginSection.classList.add('hidden');
-        if (adminPanel) adminPanel.classList.remove('hidden');
-        await loadFilesList();
-        await loadStudentsList();
-        await loadStudentsData();
-        await loadTicketsData();
-        await updateTicketsStats();
-    }
-
-    function handleContentTypeChange() {
-        const linkInput = document.getElementById('linkInput');
-        const fileInput = document.getElementById('fileInput');
-        const textInput = document.getElementById('textInput');
-        const fileWithNoteInput = document.getElementById('fileWithNoteInput');
-        const linkWithNoteInput = document.getElementById('linkWithNoteInput');
-        
-        if (linkInput) linkInput.classList.add('hidden');
-        if (fileInput) fileInput.classList.add('hidden');
-        if (textInput) textInput.classList.add('hidden');
-        if (fileWithNoteInput) fileWithNoteInput.classList.add('hidden');
-        if (linkWithNoteInput) linkWithNoteInput.classList.add('hidden');
-        
-        switch(this.value) {
-            case 'link':
-                if (linkInput) linkInput.classList.remove('hidden');
-                break;
-            case 'file':
-                if (fileInput) fileInput.classList.remove('hidden');
-                break;
-            case 'text':
-                if (textInput) textInput.classList.remove('hidden');
-                break;
-            case 'fileWithNote':
-                if (fileWithNoteInput) fileWithNoteInput.classList.remove('hidden');
-                break;
-            case 'linkWithNote':
-                if (linkWithNoteInput) linkWithNoteInput.classList.remove('hidden');
-                break;
-        }
-    }
-
-    async function handleUploadForm(e) {
-        e.preventDefault();
-        
-        const type = contentType.value;
-        const title = document.getElementById('contentTitle').value.trim();
-        let content = '';
-        let note = '';
-        
-        switch(type) {
-            case 'link':
-                content = document.getElementById('contentLink').value.trim();
-                if (!isValidUrl(content)) {
-                    alert('يرجى إدخال رابط صحيح');
-                    return;
-                }
-                break;
-            case 'file':
-                const file = document.getElementById('contentFile').files[0];
-                if (file) {
-                    // في بيئة حقيقية، يجب رفع الملف إلى خدمة تخزين
-                    content = URL.createObjectURL(file);
-                } else {
-                    alert('يرجى اختيار ملف');
-                    return;
-                }
-                break;
-            case 'text':
-                content = document.getElementById('contentText').value.trim();
-                if (content.length < 5) {
-                    alert('يرجى إدخال نص ذو محتوى');
-                    return;
-                }
-                break;
-            case 'fileWithNote':
-                const fileWithNote = document.getElementById('contentFileWithNote').files[0];
-                note = document.getElementById('contentNote').value.trim();
-                if (fileWithNote) {
-                    content = URL.createObjectURL(fileWithNote);
-                } else {
-                    alert('يرجى اختيار ملف');
-                    return;
-                }
-                if (note.length < 3) {
-                    alert('يرجى إدخال ملاحظة حول الملف');
-                    return;
-                }
-                break;
-            case 'linkWithNote':
-                content = document.getElementById('contentLinkWithNote').value.trim();
-                note = document.getElementById('contentLinkNote').value.trim();
-                if (!isValidUrl(content)) {
-                    alert('يرجى إدخال رابط صحيح');
-                    return;
-                }
-                if (note.length < 3) {
-                    alert('يرجى إدخال ملاحظة حول الرابط');
-                    return;
-                }
-                break;
-        }
-        
-        if (title && content) {
-            try {
-                await addNewContent(type, title, content, note);
-                uploadForm.reset();
-            } catch (error) {
-                alert('خطأ في إضافة المحتوى');
+            break;
+        case 'linkWithNote':
+            content = document.getElementById('contentLinkWithNote').value.trim();
+            note = document.getElementById('contentLinkNote').value.trim();
+            if (!isValidUrl(content)) {
+                alert('يرجى إدخال رابط صحيح');
+                return;
             }
-        } else {
-            alert('يرجى ملء جميع الحقول المطلوبة');
-        }
+            if (note.length < 3) {
+                alert('يرجى إدخال ملاحظة حول الرابط');
+                return;
+            }
+            break;
     }
-
-    async function addNewContent(type, title, content, note = '') {
+    
+    if (title && content) {
         try {
-            await window.supabaseClient.addContent({
-                type: type,
-                title: title,
-                content: content,
-                note: note
-            });
-            await loadFilesList();
-            alert('تم إضافة المحتوى بنجاح!');
+            await addNewContent(type, title, content, note);
+            document.getElementById('uploadForm').reset();
         } catch (error) {
-            console.error('Error adding content:', error);
-            throw error;
+            alert('خطأ في إضافة المحتوى');
         }
+    } else {
+        alert('يرجى ملء جميع الحقول المطلوبة');
     }
+}
 
-    // تحديث البيانات كل 10 ثواني
-    setInterval(async () => {
-        if (localStorage.getItem('adminLoggedIn') === 'true') {
-            await loadStudentsList();
-            await loadStudentsData();
-            await loadTicketsData();
-            await updateTicketsStats();
-        }
-    }, 10000);
-});
+async function addNewContent(type, title, content, note = '') {
+    try {
+        await window.supabaseClient.addContent({
+            type: type,
+            title: title,
+            content: content,
+            note: note
+        });
+        await loadFilesList();
+        alert('تم إضافة المحتوى بنجاح!');
+    } catch (error) {
+        console.error('Error adding content:', error);
+        throw error;
+    }
+}
 
 // جعل جميع الدوال متاحة في النطاق العام
 window.openTicketManagement = openTicketManagement;

@@ -3,10 +3,23 @@ const SUPABASE_URL = 'https://doekfbxelitbeqkbuiax.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvZWtmYnhlbGl0YmVxa2J1aWF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTU0MzAsImV4cCI6MjA3NzU5MTQzMH0.vFQYMahYm6p1UOtMeZjH8U9Q9ueXdcAQFQwc4YudXlk';
 
 // تهيئة Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabase;
+let supabaseClient;
+
+try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase initialized successfully');
+} catch (error) {
+    console.error('Error initializing Supabase:', error);
+}
 
 // دوال المشرفين
 async function verifyAdmin(username, password) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        return false;
+    }
+    
     try {
         const { data, error } = await supabase
             .rpc('verify_password', {
@@ -28,6 +41,11 @@ async function verifyAdmin(username, password) {
 
 // دوال المحتويات
 async function getContents() {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        return [];
+    }
+    
     try {
         const { data, error } = await supabase
             .from('contents')
@@ -52,6 +70,11 @@ async function getContents() {
 }
 
 async function addContent(contentData) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { data, error } = await supabase
             .from('contents')
@@ -82,6 +105,11 @@ async function addContent(contentData) {
 }
 
 async function deleteContent(contentId) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { error } = await supabase
             .from('contents')
@@ -97,6 +125,11 @@ async function deleteContent(contentId) {
 
 // دوال بيانات الزوار
 async function getStudentsData() {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        return [];
+    }
+    
     try {
         const { data, error } = await supabase
             .from('students_data')
@@ -118,6 +151,11 @@ async function getStudentsData() {
 }
 
 async function saveStudentData(student) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { data, error } = await supabase
             .from('students_data')
@@ -146,6 +184,11 @@ async function saveStudentData(student) {
 }
 
 async function updateStudentData(oldId, newData) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         // إذا تغير رقم الهوية، نحتاج لحذف القديم وإضافة الجديد
         if (oldId !== newData.id) {
@@ -160,6 +203,11 @@ async function updateStudentData(oldId, newData) {
 }
 
 async function deleteStudent(studentId) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { error } = await supabase
             .from('students_data')
@@ -175,6 +223,11 @@ async function deleteStudent(studentId) {
 
 // دوال سجلات الاطلاع
 async function getStudentsLog() {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        return [];
+    }
+    
     try {
         const { data, error } = await supabase
             .from('students_log')
@@ -204,6 +257,11 @@ async function getStudentsLog() {
 }
 
 async function addStudentLog(logData) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { data, error } = await supabase
             .from('students_log')
@@ -240,6 +298,11 @@ async function addStudentLog(logData) {
 }
 
 async function updateStudentRating(logId, rating, ratingNotes) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { data, error } = await supabase
             .from('students_log')
@@ -275,6 +338,11 @@ async function updateStudentRating(logId, rating, ratingNotes) {
 }
 
 async function deleteStudentLog(logId) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { error } = await supabase
             .from('students_log')
@@ -290,6 +358,11 @@ async function deleteStudentLog(logId) {
 
 // دوال التذاكر
 async function getTickets() {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        return [];
+    }
+    
     try {
         const { data, error } = await supabase
             .from('support_tickets')
@@ -316,6 +389,11 @@ async function getTickets() {
 }
 
 async function createTicket(ticketData) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { data, error } = await supabase
             .from('support_tickets')
@@ -350,6 +428,11 @@ async function createTicket(ticketData) {
 }
 
 async function updateTicket(ticketId, updates) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { data, error } = await supabase
             .from('support_tickets')
@@ -378,6 +461,11 @@ async function updateTicket(ticketId, updates) {
 }
 
 async function deleteTicket(ticketId) {
+    if (!supabase) {
+        console.error('Supabase client not initialized');
+        throw new Error('Supabase client not initialized');
+    }
+    
     try {
         const { error } = await supabase
             .from('support_tickets')
@@ -391,8 +479,8 @@ async function deleteTicket(ticketId) {
     }
 }
 
-// جعل الدوال متاحة عالمياً
-window.supabaseClient = {
+// تعريف الكائن الرئيسي
+supabaseClient = {
     verifyAdmin,
     getContents,
     addContent,
@@ -410,3 +498,9 @@ window.supabaseClient = {
     updateTicket,
     deleteTicket
 };
+
+// جعل الدوال متاحة عالمياً
+window.supabaseClient = supabaseClient;
+window.supabase = supabase;
+
+console.log('Supabase client functions loaded');

@@ -127,6 +127,43 @@ async function saveRating(logId, rating, notes) {
     }
 }
 
+// دالة معالجة تحميل الملفات (مضافة)
+function handleFileDownload(contentId, contentTitle, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    console.log(`محاولة تحميل الملف: ${contentTitle} (${contentId})`);
+    
+    // البحث عن المحتوى في القائمة
+    const contents = window.currentContents || [];
+    const content = contents.find(c => c.id === contentId);
+    
+    if (!content) {
+        alert('الملف غير موجود');
+        return;
+    }
+    
+    if (content.type === 'file' || content.type === 'fileWithNote') {
+        // إنشاء رابط تحميل للملف
+        const downloadLink = document.createElement('a');
+        downloadLink.href = content.content;
+        downloadLink.download = contentTitle + getFileExtension(content.content);
+        downloadLink.target = '_blank';
+        
+        // إضافة الرابط للصفحة والنقر عليه برمجياً
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        console.log(`✅ تم بدء تحميل الملف: ${contentTitle}`);
+    } else if (content.type === 'link' || content.type === 'linkWithNote') {
+        // فتح الرابط في نافذة جديدة
+        window.open(content.content, '_blank');
+    }
+}
+
 async function loadStudentContents() {
     if (!window.currentStudent || !window.supabaseClient) {
         console.error('Cannot load contents: system not ready');
@@ -136,6 +173,9 @@ async function loadStudentContents() {
     try {
         const contents = await window.supabaseClient.getContents();
         const studentLogs = await window.supabaseClient.getStudentsLog();
+        
+        // حفظ المحتويات للنطاق العام للاستخدام في التحميل
+        window.currentContents = contents;
         
         if (!window.filesContainer) {
             console.error('Files container not found');
@@ -219,13 +259,11 @@ function renderContent(content) {
                     </a>
                 </div>`;
         case 'file':
-            const fileName = content.title + getFileExtension(content.content);
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileName}" class="file-link" 
-                       onclick="handleFileDownload('${content.id}', '${content.title}')" 
-                       target="_blank">
+                    <a href="${content.content}" class="file-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}', event)">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                 </div>`;
@@ -236,13 +274,11 @@ function renderContent(content) {
                     <p>${content.content}</p>
                 </div>`;
         case 'fileWithNote':
-            const fileNameWithNote = content.title + getFileExtension(content.content);
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileNameWithNote}" class="file-link" 
-                       onclick="handleFileDownload('${content.id}', '${content.title}')" 
-                       target="_blank">
+                    <a href="${content.content}" class="file-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}', event)">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                     ${content.note ? `
@@ -331,15 +367,7 @@ function getFileExtension(url) {
     if (url.includes('.jpg') || url.includes('.jpeg')) return '.jpg';
     if (url.includes('.png')) return '.png';
     if (url.includes('.zip')) return '.zip';
-    if (url.includes('.mp4') || url.includes('.avi')) return '.video';
-    if (url.includes('.mp3') || url.includes('.wav')) return '.audio';
     return '.file';
-}
-
-function handleFileDownload(contentId, contentTitle) {
-    console.log(`تم تحميل الملف: ${contentTitle} (${contentId})`);
-    // يمكن إضافة تتبع للتحميلات هنا إذا أردت
-    // trackDownload(contentId, contentTitle);
 }
 
 // الدالة الرئيسية للصفحة
@@ -478,6 +506,9 @@ window.viewContent = async function(contentId, contentTitle) {
         alert('خطأ في تأكيد الاطلاع');
     }
 };
+
+// إضافة دالة تحميل الملفات للنطاق العام
+window.handleFileDownload = handleFileDownload;
 
 // بدء التطبيق عند اكتمال التحميل
 document.addEventListener('DOMContentLoaded', function() {

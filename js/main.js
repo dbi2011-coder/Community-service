@@ -1,3 +1,4 @@
+// js/main.js
 // دالة للتنقل بين الصفحات
 function navigateTo(page) {
     window.location.href = page;
@@ -5,24 +6,17 @@ function navigateTo(page) {
 
 // تهيئة التطبيق
 document.addEventListener('DOMContentLoaded', function() {
-    // تهيئة البيانات إذا لم تكن موجودة
-    if (!localStorage.getItem('adminContents')) {
-        localStorage.setItem('adminContents', JSON.stringify([]));
-    }
-    
-    if (!localStorage.getItem('studentsLog')) {
-        localStorage.setItem('studentsLog', JSON.stringify([]));
-    }
-    
-    if (!localStorage.getItem('studentsData')) {
-        localStorage.setItem('studentsData', JSON.stringify([]));
-    }
-    
-    // تهيئة نظام التذاكر إذا لم يكن موجوداً
-    if (!localStorage.getItem('supportTickets')) {
-        localStorage.setItem('supportTickets', JSON.stringify([]));
-    }
-    
+    // تحميل مكتبة Supabase
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    script.onload = function() {
+        // تحميل ملف supabase.js بعد تحميل المكتبة
+        const supabaseScript = document.createElement('script');
+        supabaseScript.src = 'js/supabase.js';
+        document.head.appendChild(supabaseScript);
+    };
+    document.head.appendChild(script);
+
     // تحميل الشعار إذا كان موجوداً
     const logoImg = document.getElementById('logo-img');
     if (logoImg) {

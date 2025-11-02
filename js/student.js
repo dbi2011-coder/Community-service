@@ -1,4 +1,4 @@
-// js/student.js - الملف المعدل ليعمل مع Supabase
+// js/student.js - الملف المعدل
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('studentLoginForm');
     const contentSection = document.getElementById('contentSection');
@@ -20,8 +20,51 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentContentTitle = '';
     let currentLogId = '';
 
+    // دالة للتحقق من تحميل Supabase
+    function waitForSupabase() {
+        return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            const checkSupabase = () => {
+                if (window.supabaseClient && window.supabase) {
+                    resolve();
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(checkSupabase, 100);
+                } else {
+                    reject(new Error('Supabase failed to load'));
+                }
+            };
+            checkSupabase();
+        });
+    }
+
+    // الانتظار حتى يكون Supabase جاهزاً
+    document.addEventListener('supabaseReady', initStudentPage);
+    
+    // إذا كان supabase جاهزاً بالفعل
+    if (window.supabaseClient) {
+        initStudentPage();
+    }
+
+    function initStudentPage() {
+        console.log('Initializing student page...');
+        setupRatingSystem();
+    }
+
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // الانتظار حتى يتم تحميل Supabase
+        try {
+            await waitForSupabase();
+        } catch (error) {
+            console.error('Supabase not loaded:', error);
+            alert('جاري تحميل النظام، يرجى المحاولة مرة أخرى');
+            return;
+        }
+
         const studentName = document.getElementById('studentName').value.trim();
         const studentId = document.getElementById('studentId').value.trim();
         const studentPhone = document.getElementById('studentPhone').value.trim();
@@ -33,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (!isValidPhone(studentPhone)) {
-                alert('يرجى إدخال رقم جوال صحيح');
+                alert('يرجى إدخال رقم جوال صحيح (يبدأ بـ 05 ويحتوي على 10 أرقام)');
                 return;
             }
             
@@ -63,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await loadStudentContents();
             } catch (error) {
                 console.error('Error during login:', error);
-                alert('حدث خطأ أثناء تسجيل الدخول');
+                alert('حدث خطأ أثناء تسجيل الدخول: ' + error.message);
             }
         } else {
             alert('يرجى ملء جميع الحقول المطلوبة');
@@ -402,7 +445,4 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('خطأ في تأكيد الاطلاع');
         }
     };
-
-    // تهيئة نظام التقييم عند تحميل الصفحة
-    setupRatingSystem();
 });

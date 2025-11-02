@@ -1,3 +1,36 @@
+// js/admin.js - إضافة هذا الكود في بداية الملف
+// التحقق من التحميل المزدوج
+if (window.adminPageInitialized) {
+    console.log('⚠️ Admin page already initialized, skipping...');
+} else {
+    window.adminPageInitialized = true;
+
+    // الكود الأصلي لـ admin.js يبدأ من هنا...
+    // بيانات تسجيل الدخول الافتراضية
+    const ADMIN_CREDENTIALS = {
+        username: "عمرو بن العاص",
+        password: "10243"
+    };
+
+    // متغيرات عامة
+    let currentSortOrder = 'date';
+
+    // الانتظار حتى يكون Supabase جاهزاً
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('👨‍💼 Initializing admin page...');
+        
+        document.addEventListener('supabaseReady', initAdminPage);
+        
+        // إذا كان supabase جاهزاً بالفعل
+        if (window.supabaseClient && window.isSupabaseInitialized) {
+            console.log('✅ Supabase already ready, initializing admin page...');
+            setTimeout(initAdminPage, 100);
+        }
+    });
+
+    // باقي الكود كما هو...
+    // [يتبع نفس الكود السابق لـ admin.js]
+}
 // js/admin.js - الملف المعدل ليعمل مع Supabase
 // بيانات تسجيل الدخول الافتراضية
 const ADMIN_CREDENTIALS = {
@@ -1013,3 +1046,4 @@ window.deleteStudent = deleteStudent;
 window.editRating = editRating;
 window.deleteRating = deleteRating;
 window.deleteStudentLog = deleteStudentLog;
+

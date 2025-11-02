@@ -223,7 +223,9 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileName}" class="file-link" onclick="handleFileDownload('${content.id}', '${content.title}')">
+                    <a href="${content.content}" download="${fileName}" class="file-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}')" 
+                       target="_blank">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                 </div>`;
@@ -238,7 +240,9 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileNameWithNote}" class="file-link" onclick="handleFileDownload('${content.id}', '${content.title}')">
+                    <a href="${content.content}" download="${fileNameWithNote}" class="file-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}')" 
+                       target="_blank">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                     ${content.note ? `
@@ -327,11 +331,15 @@ function getFileExtension(url) {
     if (url.includes('.jpg') || url.includes('.jpeg')) return '.jpg';
     if (url.includes('.png')) return '.png';
     if (url.includes('.zip')) return '.zip';
+    if (url.includes('.mp4') || url.includes('.avi')) return '.video';
+    if (url.includes('.mp3') || url.includes('.wav')) return '.audio';
     return '.file';
 }
 
 function handleFileDownload(contentId, contentTitle) {
     console.log(`تم تحميل الملف: ${contentTitle} (${contentId})`);
+    // يمكن إضافة تتبع للتحميلات هنا إذا أردت
+    // trackDownload(contentId, contentTitle);
 }
 
 // الدالة الرئيسية للصفحة

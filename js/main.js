@@ -18,7 +18,8 @@ function loadSupabaseLibrary() {
         
         script.onload = function() {
             console.log('✅ Supabase library loaded successfully');
-            resolve();
+            // تأخير بسيط للتأكد من اكتمال التحميل
+            setTimeout(resolve, 100);
         };
         
         script.onerror = function() {
@@ -38,7 +39,8 @@ function loadSupabaseFunctions() {
         
         script.onload = function() {
             console.log('✅ Supabase functions loaded successfully');
-            resolve();
+            // تأخير للتأكد من اكتمال التهيئة
+            setTimeout(resolve, 100);
         };
         
         script.onerror = function() {
@@ -47,6 +49,30 @@ function loadSupabaseFunctions() {
         };
         
         document.head.appendChild(script);
+    });
+}
+
+// دالة للتحقق من اكتمال تحميل Supabase
+function waitForSupabaseReady() {
+    return new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        const checkReady = () => {
+            if (window.supabaseClient && window.isSupabaseInitialized) {
+                console.log('✅ Supabase completely ready');
+                resolve();
+            } else if (attempts < maxAttempts) {
+                attempts++;
+                console.log(`⏳ Waiting for Supabase to be ready... (${attempts}/${maxAttempts})`);
+                setTimeout(checkReady, 100);
+            } else {
+                console.log('⚠️ Supabase not ready, but continuing anyway');
+                resolve();
+            }
+        };
+        
+        checkReady();
     });
 }
 
@@ -89,6 +115,9 @@ async function initializeApplication() {
         
         // الخطوة 2: تحميل ملف الدوال
         await loadSupabaseFunctions();
+        
+        // الخطوة 3: الانتظار حتى اكتمال التهيئة
+        await waitForSupabaseReady();
         
         console.log('🎉 Application initialized successfully!');
         

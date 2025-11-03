@@ -219,34 +219,42 @@ function renderContent(content) {
                     </a>
                 </div>`;
         case 'file':
-            const fileName = content.title + getFileExtension(content.content);
-            return `
-                <div class="content-preview">
-                    <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileName}" class="file-link" onclick="handleFileDownload('${content.id}', '${content.title}')">
-                        ${content.title} - اضغط هنا لتحميل الملف
-                    </a>
-                </div>`;
-        case 'text':
-            return `
-                <div class="content-preview">
-                    <h4>${content.title}</h4>
-                    <p>${content.content}</p>
-                </div>`;
         case 'fileWithNote':
-            const fileNameWithNote = content.title + getFileExtension(content.content);
-            return `
-                <div class="content-preview">
-                    <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileNameWithNote}" class="file-link" onclick="handleFileDownload('${content.id}', '${content.title}')">
-                        ${content.title} - اضغط هنا لتحميل الملف
-                    </a>
+            try {
+                const fileData = JSON.parse(content.content);
+                const fileName = fileData.name || content.title;
+                const fileType = fileData.type || 'application/octet-stream';
+                
+                return `
+                    <div class="content-preview">
+                        <p>ملف مرفوع:</p>
+                        <div class="file-info">
+                            <p><strong>اسم الملف:</strong> ${fileName}</p>
+                            <p><strong>نوع الملف:</strong> ${getFileTypeText(fileType)}</p>
+                            <p><strong>الحجم:</strong> ${formatFileSize(fileData.size)}</p>
+                        </div>
+                        <button class="btn download-btn" onclick="downloadFile('${content.id}', '${fileName}', '${fileType}', '${fileData.data}')">
+                            📥 تحميل الملف
+                        </button>
+                    </div>
                     ${content.note ? `
                         <div class="note-section">
                             <h4>ملاحظة:</h4>
                             <p class="note-text">${content.note}</p>
                         </div>
-                    ` : ''}
+                    ` : ''}`;
+            } catch (error) {
+                console.error('Error parsing file data:', error);
+                return `
+                    <div class="content-preview">
+                        <p style="color: red;">خطأ في تحميل الملف</p>
+                    </div>`;
+            }
+        case 'text':
+            return `
+                <div class="content-preview">
+                    <h4>${content.title}</h4>
+                    <div class="text-content">${content.content}</div>
                 </div>`;
         case 'linkWithNote':
             return `
@@ -265,6 +273,64 @@ function renderContent(content) {
         default:
             return '<p>نوع المحتوى غير معروف</p>';
     }
+}
+
+// دالة لتحميل الملف
+window.downloadFile = function(contentId, fileName, fileType, fileData) {
+    try {
+        // تحويل Base64 إلى Blob
+        const binaryString = atob(fileData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: fileType });
+        
+        // إنشاء رابط تحميل
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log(`تم تحميل الملف: ${fileName} (${contentId})`);
+        
+        // تسجيل عملية التحميل (اختياري)
+        handleFileDownload(contentId, fileName);
+        
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        alert('خطأ في تحميل الملف');
+    }
+}
+
+// دوال مساعدة للملفات
+function getFileTypeText(mimeType) {
+    const types = {
+        'application/pdf': 'PDF',
+        'application/msword': 'Word',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word',
+        'application/vnd.ms-excel': 'Excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel',
+        'application/vnd.ms-powerpoint': 'PowerPoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PowerPoint',
+        'image/jpeg': 'صورة JPEG',
+        'image/png': 'صورة PNG',
+        'text/plain': 'نص',
+        'application/zip': 'أرشيف مضغوط'
+    };
+    return types[mimeType] || mimeType;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 function getRatingDisplay(logs, contentId) {
@@ -319,15 +385,10 @@ function isValidPhone(phone) {
     return /^05\d{8}$/.test(phone);
 }
 
-function getFileExtension(url) {
-    if (url.includes('.pdf')) return '.pdf';
-    if (url.includes('.doc') || url.includes('.docx')) return '.docx';
-    if (url.includes('.xls') || url.includes('.xlsx')) return '.xlsx';
-    if (url.includes('.ppt') || url.includes('.pptx')) return '.pptx';
-    if (url.includes('.jpg') || url.includes('.jpeg')) return '.jpg';
-    if (url.includes('.png')) return '.png';
-    if (url.includes('.zip')) return '.zip';
-    return '.file';
+function getFileExtension(filename) {
+    if (!filename) return '';
+    const parts = filename.split('.');
+    return parts.length > 1 ? '.' + parts.pop().toLowerCase() : '';
 }
 
 function handleFileDownload(contentId, contentTitle) {

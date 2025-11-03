@@ -223,7 +223,8 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileName}" class="file-link" onclick="handleFileDownload('${content.id}', '${content.title}')">
+                    <a href="${content.content}" download="${fileName}" class="file-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}')">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                 </div>`;
@@ -238,7 +239,8 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" download="${fileNameWithNote}" class="file-link" onclick="handleFileDownload('${content.id}', '${content.title}')">
+                    <a href="${content.content}" download="${fileNameWithNote}" class="file-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}')">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                     ${content.note ? `
@@ -330,8 +332,17 @@ function getFileExtension(url) {
     return '.file';
 }
 
+// دالة معالجة تحميل الملف - تم التعديل هنا
 function handleFileDownload(contentId, contentTitle) {
     console.log(`تم تحميل الملف: ${contentTitle} (${contentId})`);
+    
+    // تسجيل تحميل الملف
+    if (window.currentStudent && window.currentStudent.id) {
+        console.log(`الزائر ${window.currentStudent.name} قام بتحميل ${contentTitle}`);
+    }
+    
+    // السماح للرابط بالعمل بشكل طبيعي
+    return true;
 }
 
 // الدالة الرئيسية للصفحة

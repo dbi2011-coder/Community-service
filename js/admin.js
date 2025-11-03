@@ -41,6 +41,13 @@ document.addEventListener('DOMContentLoaded', function() {
 function initAdminPage() {
     console.log('Initializing admin page...');
     
+    // التحقق من أن Supabase جاهز
+    if (!window.supabaseClient || !window.isSupabaseInitialized) {
+        console.error('Supabase not ready for admin page');
+        alert('النظام غير جاهز حالياً. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+        return;
+    }
+    
     const adminLoginSection = document.getElementById('adminLoginSection');
     const adminPanel = document.getElementById('adminPanel');
     const adminLoginForm = document.getElementById('adminLoginForm');
@@ -76,7 +83,7 @@ function initAdminPage() {
             }
         } catch (error) {
             console.error('Error during login:', error);
-            alert('حدث خطأ أثناء تسجيل الدخول');
+            alert('حدث خطأ أثناء تسجيل الدخول: ' + error.message);
         }
     });
 
@@ -176,7 +183,7 @@ function initAdminPage() {
                 alert('تم تحديث بيانات الزائر بنجاح!');
             } catch (error) {
                 console.error('Error updating student data:', error);
-                alert('خطأ في تحديث بيانات الزائر');
+                alert('خطأ في تحديث بيانات الزائر: ' + error.message);
             }
         });
     }
@@ -184,17 +191,26 @@ function initAdminPage() {
     // تحديث البيانات كل 10 ثواني
     setInterval(async () => {
         if (localStorage.getItem('adminLoggedIn') === 'true') {
-            await loadStudentsList();
-            await loadStudentsData();
-            await loadTicketsData();
-            await updateTicketsStats();
+            try {
+                await loadStudentsList();
+                await loadStudentsData();
+                await loadTicketsData();
+                await updateTicketsStats();
+            } catch (error) {
+                console.error('Error in auto-refresh:', error);
+            }
         }
     }, 10000);
 }
 
 // دوال مساعدة للتذاكر
 async function getTickets() {
-    return await window.supabaseClient.getTickets();
+    try {
+        return await window.supabaseClient.getTickets();
+    } catch (error) {
+        console.error('Error getting tickets:', error);
+        throw error;
+    }
 }
 
 function getStatusClass(status) {
@@ -208,7 +224,12 @@ function getStatusClass(status) {
 
 // دوال مساعدة أخرى
 async function getContents() {
-    return await window.supabaseClient.getContents();
+    try {
+        return await window.supabaseClient.getContents();
+    } catch (error) {
+        console.error('Error getting contents:', error);
+        throw error;
+    }
 }
 
 function getContentTypeText(type) {
@@ -286,7 +307,7 @@ async function loadFilesList() {
         });
     } catch (error) {
         console.error('Error loading files list:', error);
-        filesList.innerHTML = '<p class="no-files">خطأ في تحميل المحتويات</p>';
+        filesList.innerHTML = '<p class="no-files">خطأ في تحميل المحتويات: ' + error.message + '</p>';
     }
 }
 
@@ -358,7 +379,7 @@ async function loadStudentsList() {
         });
     } catch (error) {
         console.error('Error loading students list:', error);
-        studentsTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">خطأ في تحميل البيانات</td></tr>';
+        studentsTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">خطأ في تحميل البيانات: ' + error.message + '</td></tr>';
     }
 }
 
@@ -401,7 +422,7 @@ async function loadStudentsData(searchTerm = '') {
         });
     } catch (error) {
         console.error('Error loading students data:', error);
-        studentsDataTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">خطأ في تحميل البيانات</td></tr>';
+        studentsDataTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">خطأ في تحميل البيانات: ' + error.message + '</td></tr>';
     }
 }
 
@@ -472,7 +493,7 @@ async function openTicketManagement(ticketId) {
         }
     } catch (error) {
         console.error('Error opening ticket management:', error);
-        alert('خطأ في فتح إدارة التذكرة');
+        alert('خطأ في فتح إدارة التذكرة: ' + error.message);
     }
 }
 
@@ -514,7 +535,7 @@ async function addResponse(ticketId) {
         }
     } catch (error) {
         console.error('Error adding response:', error);
-        alert('خطأ في إضافة الرد');
+        alert('خطأ في إضافة الرد: ' + error.message);
     }
 }
 
@@ -538,7 +559,7 @@ async function updateTicketStatusAndClose(ticketId) {
         alert('تم تحديث حالة التذكرة بنجاح');
     } catch (error) {
         console.error('Error updating ticket status:', error);
-        alert('خطأ في تحديث حالة التذكرة');
+        alert('خطأ في تحديث حالة التذكرة: ' + error.message);
     }
 }
 
@@ -554,7 +575,7 @@ async function deleteTicket(ticketId) {
             alert('تم حذف التذكرة بنجاح');
         } catch (error) {
             console.error('Error deleting ticket:', error);
-            alert('خطأ في حذف التذكرة');
+            alert('خطأ في حذف التذكرة: ' + error.message);
         }
     }
 }
@@ -568,46 +589,54 @@ function closeTicketModal() {
 
 // دوال تحميل وعرض التذاكر
 async function loadTicketsData(searchTerm = '') {
-    const tickets = await getTickets();
-    const ticketsTableBody = document.getElementById('ticketsTableBody');
-    
-    if (!ticketsTableBody) return;
-    
-    ticketsTableBody.innerHTML = '';
-    
-    let filteredTickets = tickets;
-    if (searchTerm) {
-        filteredTickets = tickets.filter(ticket => 
-            ticket.id.includes(searchTerm) || 
-            ticket.identity.includes(searchTerm) ||
-            ticket.title.includes(searchTerm)
-        );
+    try {
+        const tickets = await getTickets();
+        const ticketsTableBody = document.getElementById('ticketsTableBody');
+        
+        if (!ticketsTableBody) return;
+        
+        ticketsTableBody.innerHTML = '';
+        
+        let filteredTickets = tickets;
+        if (searchTerm) {
+            filteredTickets = tickets.filter(ticket => 
+                ticket.id.includes(searchTerm) || 
+                ticket.identity.includes(searchTerm) ||
+                ticket.title.includes(searchTerm)
+            );
+        }
+        
+        if (filteredTickets.length === 0) {
+            ticketsTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">لا توجد تذاكر</td></tr>';
+            return;
+        }
+        
+        filteredTickets.sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+        
+        filteredTickets.forEach(ticket => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${ticket.id}</td>
+                <td>${ticket.title}</td>
+                <td>${ticket.identity}</td>
+                <td><span class="ticket-status ${getStatusClass(ticket.status)}">${ticket.status}</span></td>
+                <td>${ticket.createdDate}</td>
+                <td>
+                    <div class="ticket-action-buttons">
+                        <button class="btn view-btn" onclick="openTicketManagement('${ticket.id}')">إدارة</button>
+                        <button class="btn delete-btn" onclick="deleteTicket('${ticket.id}')">حذف</button>
+                    </div>
+                </td>
+            `;
+            ticketsTableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading tickets data:', error);
+        const ticketsTableBody = document.getElementById('ticketsTableBody');
+        if (ticketsTableBody) {
+            ticketsTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">خطأ في تحميل التذاكر: ' + error.message + '</td></tr>';
+        }
     }
-    
-    if (filteredTickets.length === 0) {
-        ticketsTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">لا توجد تذاكر</td></tr>';
-        return;
-    }
-    
-    filteredTickets.sort((a, b) => b.createdTimestamp - a.createdTimestamp);
-    
-    filteredTickets.forEach(ticket => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${ticket.id}</td>
-            <td>${ticket.title}</td>
-            <td>${ticket.identity}</td>
-            <td><span class="ticket-status ${getStatusClass(ticket.status)}">${ticket.status}</span></td>
-            <td>${ticket.createdDate}</td>
-            <td>
-                <div class="ticket-action-buttons">
-                    <button class="btn view-btn" onclick="openTicketManagement('${ticket.id}')">إدارة</button>
-                    <button class="btn delete-btn" onclick="deleteTicket('${ticket.id}')">حذف</button>
-                </div>
-            </td>
-        `;
-        ticketsTableBody.appendChild(row);
-    });
 }
 
 async function updateTicketsStats() {
@@ -708,7 +737,7 @@ async function printVisitorsList() {
         printWindow.print();
     } catch (error) {
         console.error('Error printing visitors list:', error);
-        alert('خطأ في طباعة القائمة');
+        alert('خطأ في طباعة القائمة: ' + error.message);
     }
 }
 
@@ -760,7 +789,7 @@ async function printContentsList() {
         printWindow.print();
     } catch (error) {
         console.error('Error printing contents list:', error);
-        alert('خطأ في طباعة القائمة');
+        alert('خطأ في طباعة القائمة: ' + error.message);
     }
 }
 
@@ -773,7 +802,7 @@ async function adminDeleteContent(contentId) {
             alert('تم حذف المحتوى بنجاح!');
         } catch (error) {
             console.error('Error deleting content:', error);
-            alert('خطأ في حذف المحتوى');
+            alert('خطأ في حذف المحتوى: ' + error.message);
         }
     }
 }
@@ -792,7 +821,7 @@ async function openEditStudentModal(studentId) {
         }
     } catch (error) {
         console.error('Error opening edit student modal:', error);
-        alert('خطأ في فتح نافذة التعديل');
+        alert('خطأ في فتح نافذة التعديل: ' + error.message);
     }
 }
 
@@ -805,7 +834,7 @@ async function deleteStudent(studentId) {
             alert('تم حذف الزائر بنجاح!');
         } catch (error) {
             console.error('Error deleting student:', error);
-            alert('خطأ في حذف الزائر');
+            alert('خطأ في حذف الزائر: ' + error.message);
         }
     }
 }
@@ -826,7 +855,7 @@ async function editRating(logId) {
         }
     } catch (error) {
         console.error('Error editing rating:', error);
-        alert('خطأ في تعديل التقييم');
+        alert('خطأ في تعديل التقييم: ' + error.message);
     }
 }
 
@@ -838,7 +867,7 @@ async function deleteRating(logId) {
             alert('تم حذف التقييم بنجاح!');
         } catch (error) {
             console.error('Error deleting rating:', error);
-            alert('خطأ في حذف التقييم');
+            alert('خطأ في حذف التقييم: ' + error.message);
         }
     }
 }
@@ -851,7 +880,7 @@ async function deleteStudentLog(logId) {
             alert('تم حذف سجل الاطلاع بنجاح!');
         } catch (error) {
             console.error('Error deleting student log:', error);
-            alert('خطأ في حذف سجل الاطلاع');
+            alert('خطأ في حذف سجل الاطلاع: ' + error.message);
         }
     }
 }
@@ -869,11 +898,17 @@ async function showAdminPanel() {
     
     if (adminLoginSection) adminLoginSection.classList.add('hidden');
     if (adminPanel) adminPanel.classList.remove('hidden');
-    await loadFilesList();
-    await loadStudentsList();
-    await loadStudentsData();
-    await loadTicketsData();
-    await updateTicketsStats();
+    
+    try {
+        await loadFilesList();
+        await loadStudentsList();
+        await loadStudentsData();
+        await loadTicketsData();
+        await updateTicketsStats();
+    } catch (error) {
+        console.error('Error showing admin panel:', error);
+        alert('خطأ في تحميل البيانات: ' + error.message);
+    }
 }
 
 function handleContentTypeChange() {
@@ -941,7 +976,7 @@ async function handleUploadForm(e) {
                 content = await convertFileToBase64(file);
             } catch (error) {
                 console.error('Error converting file:', error);
-                alert('خطأ في معالجة الملف');
+                alert('خطأ في معالجة الملف: ' + error.message);
                 return;
             }
             break;

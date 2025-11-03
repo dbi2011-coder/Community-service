@@ -179,7 +179,95 @@ if (window.ticketsPageInitialized) {
         });
     }
 
+    // دوال إضافية مطلوبة
+    async function viewTicketDetails(ticketId) {
+        try {
+            const tickets = await window.supabaseClient.getTickets();
+            const ticket = tickets.find(t => t.id === ticketId);
+            
+            if (ticket) {
+                const detailsSection = document.getElementById('ticketDetailsSection');
+                const detailsContent = document.getElementById('ticketDetailsContent');
+                
+                if (detailsSection && detailsContent) {
+                    detailsContent.innerHTML = `
+                        <div class="ticket-detail-card">
+                            <div class="ticket-detail-header">
+                                <h3>${ticket.title}</h3>
+                                <span class="ticket-status ${getStatusClass(ticket.status)}">${ticket.status}</span>
+                            </div>
+                            <div class="ticket-info">
+                                <p><strong>رقم التذكرة:</strong> ${ticket.id}</p>
+                                <p><strong>رقم الهوية:</strong> ${ticket.identity}</p>
+                                <p><strong>تاريخ الإنشاء:</strong> ${ticket.createdDate}</p>
+                                <p><strong>آخر تحديث:</strong> ${ticket.lastUpdate}</p>
+                            </div>
+                            <div class="ticket-description">
+                                <h4>وصف المشكلة:</h4>
+                                <p>${ticket.description}</p>
+                            </div>
+                            ${ticket.responses.length > 0 ? `
+                                <div class="ticket-responses">
+                                    <h4>الردود:</h4>
+                                    ${ticket.responses.map(response => `
+                                        <div class="response-item">
+                                            <div class="response-header">
+                                                <strong>${response.responder}</strong>
+                                                <span class="response-date">${response.date}</span>
+                                            </div>
+                                            <p>${response.message}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : `
+                                <div class="no-responses">
+                                    <p>لا توجد ردود حتى الآن</p>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                    
+                    hideAllSections();
+                    detailsSection.classList.remove('hidden');
+                }
+            }
+        } catch (error) {
+            console.error('Error viewing ticket details:', error);
+            alert('خطأ في عرض تفاصيل التذكرة');
+        }
+    }
+
+    async function addVisitorResponse(ticketId) {
+        const responseMessage = prompt('أدخل ردك:');
+        if (responseMessage && responseMessage.trim()) {
+            try {
+                const tickets = await window.supabaseClient.getTickets();
+                const ticket = tickets.find(t => t.id === ticketId);
+                
+                if (ticket) {
+                    const responses = [...ticket.responses, {
+                        responder: 'الزائر',
+                        message: responseMessage.trim(),
+                        date: new Date().toLocaleString('ar-SA')
+                    }];
+                    
+                    await window.supabaseClient.updateTicket(ticketId, {
+                        responses: responses,
+                        last_update: new Date().toISOString()
+                    });
+                    
+                    await viewTicketDetails(ticketId);
+                    alert('تم إضافة ردك بنجاح');
+                }
+            } catch (error) {
+                console.error('Error adding visitor response:', error);
+                alert('خطأ في إضافة الرد');
+            }
+        }
+    }
+
     // جعل الدوال متاحة globally
     window.viewTicketDetails = viewTicketDetails;
     window.addVisitorResponse = addVisitorResponse;
+    window.hideAllSections = hideAllSections;
 }

@@ -1540,3 +1540,88 @@ tr:hover {
     border: 1px solid #27ae60;
     margin-top: 15px;
 }
+/* أنماط جديدة لتحميل الملفات */
+.download-btn {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 10px 0;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+}
+
+.file-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    border-right: 3px solid #3498db;
+}
+
+.file-info p {
+    margin: 8px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.file-info strong {
+    color: #2c3e50;
+}
+
+.text-content {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* تحسين عرض الملفات في القوائم */
+.file-item .file-info {
+    background: transparent;
+    padding: 0;
+    border: none;
+}
+
+.file-item .file-info h4 {
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.file-item .file-info p {
+    margin: 3px 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* تحسين عرض معلومات الملف للزوار */
+.student-file-item .file-info {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    margin: 10px 0;
+}
+
+.student-file-item .file-info p {
+    margin: 5px 0;
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.student-file-item .file-info p:last-child {
+    border-bottom: none;
+}

@@ -127,7 +127,7 @@ async function saveRating(logId, rating, notes) {
     }
 }
 
-// دالة معالجة تحميل الملفات (مضافة)
+// دالة معالجة تحميل الملفات (معدلة ومصححة)
 function handleFileDownload(contentId, contentTitle, event) {
     if (event) {
         event.preventDefault();
@@ -146,22 +146,61 @@ function handleFileDownload(contentId, contentTitle, event) {
     }
     
     if (content.type === 'file' || content.type === 'fileWithNote') {
-        // إنشاء رابط تحميل للملف
-        const downloadLink = document.createElement('a');
-        downloadLink.href = content.content;
-        downloadLink.download = contentTitle + getFileExtension(content.content);
-        downloadLink.target = '_blank';
-        
-        // إضافة الرابط للصفحة والنقر عليه برمجياً
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        
-        console.log(`✅ تم بدء تحميل الملف: ${contentTitle}`);
+        try {
+            // إنشاء رابط تحميل للملف
+            const downloadLink = document.createElement('a');
+            downloadLink.href = content.content;
+            
+            // استخراج امتداد الملف من الرابط أو استخدام امتداد افتراضي
+            let fileExtension = getFileExtension(content.content);
+            let fileName = contentTitle + fileExtension;
+            
+            // تعيين اسم الملف للتحميل
+            downloadLink.download = fileName;
+            downloadLink.target = '_blank';
+            
+            // إضافة الرابط للصفحة والنقر عليه برمجياً
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            
+            console.log(`✅ تم بدء تحميل الملف: ${contentTitle}`);
+            
+            // إظهار رسالة تأكيد للمستخدم
+            setTimeout(() => {
+                alert(`تم بدء تحميل الملف: ${contentTitle}\nإذا لم يبدأ التحميل تلقائياً، يرجى التحقق من إعدادات المتصفح.`);
+            }, 500);
+            
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            alert('حدث خطأ أثناء تحميل الملف. يرجى المحاولة مرة أخرى.');
+        }
     } else if (content.type === 'link' || content.type === 'linkWithNote') {
         // فتح الرابط في نافذة جديدة
         window.open(content.content, '_blank');
     }
+}
+
+// دالة مساعدة محسنة لاستخراج امتداد الملف
+function getFileExtension(url) {
+    if (!url) return '.file';
+    
+    // استخراج الامتداد من الرابط
+    const urlParts = url.split('/').pop().split('.');
+    if (urlParts.length > 1) {
+        const extension = '.' + urlParts.pop().toLowerCase();
+        
+        // التحقق من صحة الامتداد
+        const validExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', 
+                               '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar', '.txt'];
+        
+        if (validExtensions.includes(extension)) {
+            return extension;
+        }
+    }
+    
+    // إذا لم يتم التعرف على الامتداد، استخدام امتداد افتراضي بناءً على نوع المحتوى
+    return '.file';
 }
 
 async function loadStudentContents() {
@@ -357,17 +396,6 @@ function isValidId(id) {
 
 function isValidPhone(phone) {
     return /^05\d{8}$/.test(phone);
-}
-
-function getFileExtension(url) {
-    if (url.includes('.pdf')) return '.pdf';
-    if (url.includes('.doc') || url.includes('.docx')) return '.docx';
-    if (url.includes('.xls') || url.includes('.xlsx')) return '.xlsx';
-    if (url.includes('.ppt') || url.includes('.pptx')) return '.pptx';
-    if (url.includes('.jpg') || url.includes('.jpeg')) return '.jpg';
-    if (url.includes('.png')) return '.png';
-    if (url.includes('.zip')) return '.zip';
-    return '.file';
 }
 
 // الدالة الرئيسية للصفحة

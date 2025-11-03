@@ -1,4 +1,4 @@
-// js/student.js
+// js/student.js - الإصدار المعدل النهائي
 console.log('🎓 Student script loaded');
 
 // دالة للتحقق من تحميل Supabase
@@ -332,7 +332,7 @@ function getFileExtension(url) {
     return '.file';
 }
 
-// دالة معالجة تحميل الملف - تم التعديل هنا
+// دالة معالجة تحميل الملف - معدلة للعمل بشكل صحيح
 function handleFileDownload(contentId, contentTitle) {
     console.log(`تم تحميل الملف: ${contentTitle} (${contentId})`);
     
@@ -341,7 +341,7 @@ function handleFileDownload(contentId, contentTitle) {
         console.log(`الزائر ${window.currentStudent.name} قام بتحميل ${contentTitle}`);
     }
     
-    // السماح للرابط بالعمل بشكل طبيعي
+    // السماح للرابط بالعمل بشكل طبيعي - لا تمنع السلوك الافتراضي
     return true;
 }
 
@@ -481,6 +481,8 @@ window.viewContent = async function(contentId, contentTitle) {
         alert('خطأ في تأكيد الاطلاع');
     }
 };
+
+window.handleFileDownload = handleFileDownload;
 
 // بدء التطبيق عند اكتمال التحميل
 document.addEventListener('DOMContentLoaded', function() {

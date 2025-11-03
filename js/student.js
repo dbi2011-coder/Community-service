@@ -550,4 +550,115 @@ if (window.studentPageInitialized) {
                     }
                     
                     if (!isValidPhone(studentPhone)) {
-                        alert('يرجى إدخال رقم جوال صحيح (يبدأ بـ 05 ويحتوي على 10 أرقام)
+                        alert('يرجى إدخال رقم جوال صحيح (يبدأ بـ 05 ويحتوي على 10 أرقام)');
+                        return;
+                    }
+                    
+                    try {
+                        // التحقق من تطابق البيانات إذا كان الزائر مسجل مسبقاً
+                        const studentsData = await window.supabaseClient.getStudentsData();
+                        const existingStudent = studentsData.find(s => s.id === studentId);
+                        
+                        if (existingStudent) {
+                            if (existingStudent.name !== studentName || existingStudent.phone !== studentPhone) {
+                                alert('البيانات لا تتطابق مع السجل السابق. يرجى التأكد من الاسم ورقم الجوال، أو التواصل مع مشرف البرنامج في حال النسيان.');
+                                return;
+                            }
+                        }
+                        
+                        window.currentStudent = {
+                            name: studentName,
+                            id: studentId,
+                            phone: studentPhone
+                        };
+                        
+                        await saveStudentData(window.currentStudent);
+                        
+                        if (window.displayVisitorName) window.displayVisitorName.textContent = window.currentStudent.name;
+                        if (window.displayVisitorId) window.displayVisitorId.textContent = window.currentStudent.id;
+                        if (window.displayVisitorPhone) window.displayVisitorPhone.textContent = window.currentStudent.phone;
+                        if (window.loginTime) window.loginTime.textContent = new Date().toLocaleString('ar-SA');
+                        
+                        if (window.loginForm) window.loginForm.classList.add('hidden');
+                        if (window.contentSection) window.contentSection.classList.remove('hidden');
+                        
+                        await loadStudentContents();
+                    } catch (error) {
+                        console.error('Error during login:', error);
+                        alert('حدث خطأ أثناء تسجيل الدخول: ' + error.message);
+                    }
+                } else {
+                    alert('يرجى ملء جميع الحقول المطلوبة');
+                }
+            });
+        }
+        
+        console.log('✅ Student page initialized successfully');
+    }
+
+    // جعل الدوال متاحة عالمياً
+    window.viewContent = async function(contentId, contentTitle) {
+        try {
+            const logData = {
+                studentName: window.currentStudent.name,
+                studentId: window.currentStudent.id,
+                studentPhone: window.currentStudent.phone,
+                contentId: contentId,
+                contentTitle: contentTitle
+            };
+            
+            const result = await window.supabaseClient.addStudentLog(logData);
+            window.currentLogId = result.id;
+            
+            // إعداد نظام التقييم
+            window.currentContentId = contentId;
+            window.currentContentTitle = contentTitle;
+            window.currentRating = 0;
+            
+            // تحديث عنوان المحتوى في واجهة التقييم
+            const ratingContentTitle = document.getElementById('ratingContentTitle');
+            if (ratingContentTitle) ratingContentTitle.textContent = contentTitle;
+            
+            // إعادة تعيين النجوم
+            document.querySelectorAll('.star').forEach(star => {
+                star.classList.remove('active');
+            });
+            
+            const ratingNotes = document.getElementById('ratingNotes');
+            if (ratingNotes) ratingNotes.value = '';
+            
+            const currentRatingText = document.getElementById('currentRatingText');
+            if (currentRatingText) currentRatingText.textContent = 'لم يتم اختيار تقييم بعد';
+            
+            const submitRatingBtn = document.getElementById('submitRating');
+            if (submitRatingBtn) submitRatingBtn.disabled = true;
+            
+            // إظهار قسم التقييم وإخفاء المحتوى
+            if (window.contentSection) window.contentSection.classList.add('hidden');
+            if (window.ratingSection) window.ratingSection.classList.remove('hidden');
+        } catch (error) {
+            console.error('Error viewing content:', error);
+            alert('خطأ في تأكيد الاطلاع');
+        }
+    };
+
+    // إضافة دالة تحميل الملفات للنطاق العام
+    window.handleFileDownload = handleFileDownload;
+
+    // بدء التطبيق عند اكتمال التحميل
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 Student page DOM loaded');
+        
+        // الانتظار حتى يكون Supabase جاهزاً
+        document.addEventListener('supabaseReady', function() {
+            console.log('✅ Supabase ready, initializing student page...');
+            setTimeout(initStudentPage, 100);
+        });
+        
+        // إذا كان supabase جاهزاً بالفعل
+        if (window.supabaseClient && window.isSupabaseInitialized) {
+            console.log('✅ Supabase already ready, initializing student page...');
+            setTimeout(initStudentPage, 100);
+        }
+    });
+}

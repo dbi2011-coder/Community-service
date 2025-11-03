@@ -27,7 +27,7 @@
                 
                 <div class="option-card" onclick="showTicketQuerySection()">
                     <h2>استعلام عن تذكرة</h2>
-                    <p>متابعة حالة التذكرة السابقة</p>
+                    <p>متابعة حالة التذكرة السابقة والرد على المسؤول</p>
                 </div>
 
                 <div class="option-card" onclick="navigateTo('index.html')">
@@ -40,6 +40,7 @@
             <div id="newTicketSection" class="hidden">
                 <div class="contact-form">
                     <h2>إنشاء تذكرة جديدة</h2>
+                    <p class="section-description">يمكنك إنشاء تذكرة جديدة للاستفسارات أو المشاكل الفنية. سيتم الرد عليك في أقرب وقت.</p>
                     <form id="newTicketForm">
                         <div class="form-group">
                             <label for="ticketTitle">عنوان التذكرة:</label>
@@ -65,6 +66,7 @@
             <div id="ticketQuerySection" class="hidden">
                 <div class="contact-form">
                     <h2>استعلام عن تذكرة</h2>
+                    <p class="section-description">يمكنك متابعة تذكرتك السابقة والرد على المسؤول إذا كانت التذكرة مفتوحة أو قيد المعالجة.</p>
                     <form id="ticketQueryForm">
                         <div class="form-group">
                             <label for="queryTicketId">رقم التذكرة:</label>
@@ -83,7 +85,10 @@
 
                 <!-- نتائج البحث -->
                 <div id="ticketResults" class="hidden">
-                    <h3>نتائج البحث</h3>
+                    <div class="results-header">
+                        <h3>نتائج البحث</h3>
+                        <p class="results-info">يمكنك عرض تفاصيل التذكرة والرد على المسؤول إذا كانت التذكرة مفتوحة أو قيد المعالجة</p>
+                    </div>
                     <div id="ticketResultsList">
                         <!-- سيتم ملؤها بالنتائج -->
                     </div>
@@ -97,7 +102,6 @@
                     <div id="ticketDetailsContent">
                         <!-- سيتم ملؤها بتفاصيل التذكرة -->
                     </div>
-                    <button class="btn secondary" onclick="showTicketQuerySection()">العودة للبحث</button>
                 </div>
             </div>
         </main>
@@ -127,6 +131,43 @@
         function navigateTo(page) {
             window.location.href = page;
         }
+
+        // إضافة أنماط CSS ديناميكية للنتائج
+        const style = document.createElement('style');
+        style.textContent = `
+            .results-header {
+                text-align: center;
+                margin-bottom: 20px;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                border: 1px solid #e9ecef;
+            }
+            
+            .results-info {
+                color: #666;
+                margin: 10px 0 0 0;
+                font-size: 14px;
+            }
+            
+            .section-description {
+                color: #666;
+                text-align: center;
+                margin-bottom: 20px;
+                padding: 10px;
+                background: #f8f9fa;
+                border-radius: 5px;
+                border-right: 3px solid #667eea;
+            }
+            
+            .ticket-details {
+                background: #f8f9fa;
+                padding: 25px;
+                border-radius: 10px;
+                border: 1px solid #e9ecef;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

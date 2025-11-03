@@ -109,6 +109,13 @@ function setupFallbackMode() {
 async function initializeApplication() {
     console.log('🚀 Starting application initialization...');
     
+    // التحقق من التهيئة المسبقة
+    if (window.isSupabaseInitialized) {
+        console.log('✅ Application already initialized');
+        document.dispatchEvent(new CustomEvent('supabaseReady'));
+        return;
+    }
+    
     try {
         // الخطوة 1: تحميل مكتبة Supabase
         await loadSupabaseLibrary();

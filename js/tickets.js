@@ -1,6 +1,93 @@
 // js/tickets.js
 console.log('🎫 Tickets script loaded');
 
+// جعل الدوال متاحة عالمياً
+window.viewTicketDetails = async function(ticketId) {
+    try {
+        const tickets = await window.supabaseClient.getTickets();
+        const ticket = tickets.find(t => t.id === ticketId);
+        
+        if (ticket) {
+            // إخفاء قسم النتائج وإظهار قسم التفاصيل
+            document.getElementById('ticketResults').classList.add('hidden');
+            document.getElementById('ticketDetailsSection').classList.remove('hidden');
+            
+            const detailsContent = document.getElementById('ticketDetailsContent');
+            detailsContent.innerHTML = `
+                <div class="ticket-detail-card">
+                    <div class="ticket-detail-header">
+                        <h3>${ticket.title}</h3>
+                        <span class="ticket-status ${getStatusClass(ticket.status)}">${ticket.status}</span>
+                    </div>
+                    <div class="ticket-info">
+                        <p><strong>رقم التذكرة:</strong> ${ticket.id}</p>
+                        <p><strong>رقم الهوية:</strong> ${ticket.identity}</p>
+                        <p><strong>تاريخ الإنشاء:</strong> ${ticket.createdDate}</p>
+                        <p><strong>آخر تحديث:</strong> ${ticket.lastUpdate}</p>
+                    </div>
+                    <div class="ticket-description">
+                        <h4>وصف المشكلة:</h4>
+                        <p>${ticket.description}</p>
+                    </div>
+                    ${ticket.responses && ticket.responses.length > 0 ? `
+                        <div class="ticket-responses">
+                            <h4>الردود:</h4>
+                            ${ticket.responses.map((response, index) => `
+                                <div class="response-item">
+                                    <div class="response-header">
+                                        <strong>${response.responder}</strong>
+                                        <span class="response-date">${response.date}</span>
+                                    </div>
+                                    <p>${response.message}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="no-responses">
+                            <p>لا توجد ردود حتى الآن</p>
+                        </div>
+                    `}
+                </div>
+            `;
+        } else {
+            alert('التذكرة غير موجودة');
+        }
+    } catch (error) {
+        console.error('Error viewing ticket details:', error);
+        alert('خطأ في عرض تفاصيل التذكرة: ' + error.message);
+    }
+};
+
+window.addVisitorResponse = async function(ticketId) {
+    const responseMessage = prompt('أدخل ردك على التذكرة:');
+    if (responseMessage && responseMessage.trim()) {
+        try {
+            const tickets = await window.supabaseClient.getTickets();
+            const ticket = tickets.find(t => t.id === ticketId);
+            
+            if (ticket) {
+                const responses = [...(ticket.responses || []), {
+                    responder: 'الزائر',
+                    message: responseMessage.trim(),
+                    date: new Date().toLocaleString('ar-SA')
+                }];
+                
+                await window.supabaseClient.updateTicket(ticketId, {
+                    responses: responses,
+                    last_update: new Date().toISOString()
+                });
+                
+                // تحديث العرض
+                await window.viewTicketDetails(ticketId);
+                alert('تم إضافة ردك بنجاح');
+            }
+        } catch (error) {
+            console.error('Error adding visitor response:', error);
+            alert('خطأ في إضافة الرد: ' + error.message);
+        }
+    }
+};
+
 // التحقق من عدم التهيئة المزدوجة
 if (window.ticketsPageInitialized) {
     console.log('⚠️ Tickets page already initialized, skipping...');
@@ -26,6 +113,13 @@ if (window.ticketsPageInitialized) {
 
     function initTicketsPage() {
         console.log('🎫 Initializing tickets page...');
+        
+        // التحقق من أن Supabase جاهز
+        if (!window.supabaseClient || !window.isSupabaseInitialized) {
+            console.error('Supabase not ready for tickets page');
+            alert('النظام غير جاهز حالياً. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+            return;
+        }
         
         const newTicketForm = document.getElementById('newTicketForm');
         const ticketQueryForm = document.getElementById('ticketQueryForm');
@@ -73,7 +167,7 @@ if (window.ticketsPageInitialized) {
                         await searchTickets(ticketId, identity);
                     } catch (error) {
                         console.error('Error searching tickets:', error);
-                        alert('خطأ في البحث عن التذاكر');
+                        alert('خطأ في البحث عن التذاكر: ' + error.message);
                     }
                 } else {
                     alert('يرجى إدخال رقم التذكرة أو رقم الهوية');
@@ -97,22 +191,32 @@ if (window.ticketsPageInitialized) {
             responses: []
         };
         
-        const result = await window.supabaseClient.createTicket(newTicket);
-        return result;
+        try {
+            const result = await window.supabaseClient.createTicket(newTicket);
+            return result;
+        } catch (error) {
+            console.error('Error creating ticket:', error);
+            throw new Error('فشل في إنشاء التذكرة: ' + error.message);
+        }
     }
 
     // البحث عن التذاكر
     async function searchTickets(ticketId, identity) {
-        const tickets = await window.supabaseClient.getTickets();
-        let results = [];
-        
-        if (ticketId) {
-            results = tickets.filter(ticket => ticket.id === ticketId);
-        } else if (identity) {
-            results = tickets.filter(ticket => ticket.identity === identity);
+        try {
+            const tickets = await window.supabaseClient.getTickets();
+            let results = [];
+            
+            if (ticketId) {
+                results = tickets.filter(ticket => ticket.id === ticketId);
+            } else if (identity) {
+                results = tickets.filter(ticket => ticket.identity === identity);
+            }
+            
+            displayTicketResults(results);
+        } catch (error) {
+            console.error('Error searching tickets:', error);
+            throw new Error('فشل في البحث عن التذاكر: ' + error.message);
         }
-        
-        displayTicketResults(results);
     }
 
     // عرض نتائج البحث
@@ -144,6 +248,9 @@ if (window.ticketsPageInitialized) {
                     </div>
                     <div class="ticket-actions">
                         <button class="btn view-btn" onclick="viewTicketDetails('${ticket.id}')">عرض التفاصيل</button>
+                        ${ticket.status !== 'مغلقة' ? `
+                            <button class="btn secondary" onclick="addVisitorResponse('${ticket.id}')">إضافة رد</button>
+                        ` : ''}
                     </div>
                 `;
                 resultsContainer.appendChild(ticketElement);
@@ -178,8 +285,4 @@ if (window.ticketsPageInitialized) {
             if (element) element.classList.add('hidden');
         });
     }
-
-    // جعل الدوال متاحة globally
-    window.viewTicketDetails = viewTicketDetails;
-    window.addVisitorResponse = addVisitorResponse;
 }

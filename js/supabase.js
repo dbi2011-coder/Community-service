@@ -1,24 +1,23 @@
 // js/supabase.js
 console.log('🔧 Starting Supabase functions initialization...');
 
-// التحقق من عدم التهيئة المزدوجة
-if (window.supabaseClient && window.isSupabaseInitialized) {
-    console.log('⚠️ Supabase already initialized, skipping...');
-} else {
-    initializeSupabase();
-}
+// تهيئة Supabase مباشرة
+initializeSupabase();
 
 function initializeSupabase() {
+    console.log('🔄 Initializing Supabase...');
+    
     // محاولة تهيئة Supabase
     try {
         // التحقق من وجود المكتبة أولاً
         if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-            console.warn('⚠️ Supabase library not available yet, will retry later...');
-            // إعادة المحاولة بعد ثانية
-            setTimeout(initializeSupabase, 1000);
+            console.error('❌ Supabase library not available');
+            setupErrorMode();
             return;
         }
 
+        console.log('✅ Supabase library found, creating client...');
+        
         const SUPABASE_URL = 'https://doekfbxelitbeqkbuiax.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvZWtmYnhlbGl0YmVxa2J1aWF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTU0MzAsImV4cCI6MjA3NzU5MTQzMH0.vFQYMahYm6p1UOtMeZjH8U9Q9ueXdcAQFQwc4YudXlk';
 
@@ -503,35 +502,35 @@ function initializeSupabase() {
 
     } catch (error) {
         console.error('❌ Supabase functions initialization failed:', error);
-        setupFallbackMode();
+        setupErrorMode();
     }
 }
 
-function setupFallbackMode() {
-    console.log('🛡️ Setting up fallback mode...');
+function setupErrorMode() {
+    console.log('❌ Setting up error mode - Supabase not available');
     
-    // إنشاء دوال وهمية في حالة الفشل
+    // إنشاء دوال فارغة تظهر رسائل خطأ
     window.supabaseClient = {
-        verifyAdmin: async () => false,
-        getContents: async () => [],
-        addContent: async () => { throw new Error('النظام غير متاح حالياً'); },
-        deleteContent: async () => { throw new Error('النظام غير متاح حالياً'); },
-        getStudentsData: async () => [],
-        saveStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
-        updateStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
-        deleteStudent: async () => { throw new Error('النظام غير متاح حالياً'); },
-        getStudentsLog: async () => [],
-        addStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
-        updateStudentRating: async () => { throw new Error('النظام غير متاح حالياً'); },
-        deleteStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
-        getTickets: async () => [],
-        createTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
-        updateTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
-        deleteTicket: async () => { throw new Error('النظام غير متاح حالياً'); }
+        verifyAdmin: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        getContents: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        addContent: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        deleteContent: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        getStudentsData: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        saveStudentData: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        updateStudentData: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        deleteStudent: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        getStudentsLog: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        addStudentLog: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        updateStudentRating: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        deleteStudentLog: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        getTickets: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        createTicket: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        updateTicket: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); },
+        deleteTicket: async () => { throw new Error('النظام غير متاح حالياً - يرجى المحاولة لاحقاً'); }
     };
     
     window.supabase = {};
     window.isSupabaseInitialized = true;
     
-    console.log('✅ Fallback mode activated in supabase.js');
+    console.log('✅ Error mode activated');
 }

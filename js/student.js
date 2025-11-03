@@ -1,664 +1,610 @@
-// js/student.js
-console.log('🎓 Student script loaded');
+// js/supabase.js
+console.log('🔧 Starting Supabase functions initialization...');
 
-// التحقق من التحميل المزدوج
-if (window.studentPageInitialized) {
-    console.log('⚠️ Student page already initialized, skipping...');
+// التحقق من عدم التهيئة المزدوجة
+if (window.supabaseClient && window.isSupabaseInitialized) {
+    console.log('⚠️ Supabase already initialized, skipping...');
 } else {
-    window.studentPageInitialized = true;
+    // بدء التهيئة بعد تحميل الصفحة بالكامل
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeSupabase);
+    } else {
+        setTimeout(initializeSupabase, 100);
+    }
+}
 
-    // دالة للتحقق من تحميل Supabase
-    function waitForSupabase() {
-        return new Promise((resolve, reject) => {
-            let attempts = 0;
-            const maxAttempts = 100;
+function initializeSupabase() {
+    console.log('🔄 Attempting to initialize Supabase...');
+    
+    // التحقق من التهيئة المسبقة
+    if (window.supabaseClient && window.isSupabaseInitialized) {
+        console.log('✅ Supabase already initialized');
+        document.dispatchEvent(new CustomEvent('supabaseReady'));
+        return;
+    }
+    
+    // محاولة تهيئة Supabase
+    try {
+        // التحقق من وجود المكتبة أولاً
+        if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+            console.warn('⚠️ Supabase library not available yet, will retry in 500ms...');
             
-            const checkSupabase = () => {
-                if (window.supabaseClient && window.supabase && window.isSupabaseInitialized) {
-                    resolve();
-                } else if (attempts < maxAttempts) {
-                    attempts++;
-                    setTimeout(checkSupabase, 100);
+            // إعادة المحاولة بعد نصف ثانية مع عدد محاولات محدود
+            let retryCount = 0;
+            const maxRetries = 10;
+            
+            const retryInitialization = () => {
+                retryCount++;
+                if (retryCount <= maxRetries) {
+                    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+                        console.log('✅ Supabase library loaded on retry ' + retryCount);
+                        createSupabaseClient();
+                    } else {
+                        console.warn(`🔄 Retry ${retryCount}/${maxRetries} - Supabase library still not available`);
+                        setTimeout(retryInitialization, 500);
+                    }
                 } else {
-                    reject(new Error('Supabase not loaded'));
+                    console.error('❌ Max retries reached, setting up fallback mode');
+                    setupFallbackMode();
                 }
             };
-            checkSupabase();
-        });
-    }
-
-    // نظام التقييم
-    function setupRatingSystem() {
-        console.log('⭐ Setting up rating system...');
-        
-        const stars = document.querySelectorAll('.star');
-        const submitRatingBtn = document.getElementById('submitRating');
-        const skipRatingBtn = document.getElementById('skipRating');
-        const currentRatingText = document.getElementById('currentRatingText');
-        
-        if (!stars.length) {
-            console.log('⭐ No stars found, skipping rating system');
+            
+            setTimeout(retryInitialization, 500);
             return;
         }
         
-        stars.forEach(star => {
-            star.addEventListener('click', function() {
-                const rating = parseInt(this.getAttribute('data-rating'));
-                window.currentRating = rating;
-                
-                // تحديث مظهر النجوم
-                stars.forEach(s => {
-                    const starRating = parseInt(s.getAttribute('data-rating'));
-                    if (starRating <= rating) {
-                        s.classList.add('active');
-                    } else {
-                        s.classList.remove('active');
-                    }
-                });
-                
-                // تحديث نص التقييم الحالي
-                const ratingTexts = {
-                    1: '🌠 ضعيف - يحتاج تحسين',
-                    2: '💫 مقبول - محتوى عادي', 
-                    3: '⭐ جيد - مفيد ومتميز',
-                    4: '🌟 جيد جداً - محتوى قيم',
-                    5: '✨ ممتاز - إبداعي ورائع'
-                };
-                if (currentRatingText) {
-                    currentRatingText.textContent = ratingTexts[rating] || 'لم يتم اختيار تقييم بعد';
-                }
-                
-                if (submitRatingBtn) {
-                    submitRatingBtn.disabled = false;
-                }
-            });
-            
-            // تأثير التمرير
-            star.addEventListener('mouseenter', function() {
-                const rating = parseInt(this.getAttribute('data-rating'));
-                stars.forEach(s => {
-                    const starRating = parseInt(s.getAttribute('data-rating'));
-                    if (starRating <= rating) {
-                        s.classList.add('hover');
-                    } else {
-                        s.classList.remove('hover');
-                    }
-                });
-            });
-            
-            star.addEventListener('mouseleave', function() {
-                stars.forEach(s => {
-                    s.classList.remove('hover');
-                });
-            });
-        });
+        createSupabaseClient();
         
-        if (submitRatingBtn) {
-            submitRatingBtn.addEventListener('click', async function() {
-                const notes = document.getElementById('ratingNotes');
-                const notesValue = notes ? notes.value.trim() : '';
+    } catch (error) {
+        console.error('❌ Supabase initialization failed:', error);
+        setupFallbackMode();
+    }
+}
+
+function createSupabaseClient() {
+    try {
+        const SUPABASE_URL = 'https://doekfbxelitbeqkbuiax.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvZWtmYnhlbGl0YmVxa2J1aWF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTU0MzAsImV4cCI6MjA3NzU5MTQzMH0.vFQYMahYm6p1UOtMeZjH8U9Q9ueXdcAQFQwc4YudXlk';
+
+        console.log('🔧 Creating Supabase client...');
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false
+            },
+            db: {
+                schema: 'public'
+            },
+            global: {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        });
+
+        console.log('✅ Supabase client created successfully');
+
+        // تعريف دوال Supabase
+        const supabaseClient = {
+            // دوال المشرفين
+            verifyAdmin: async (username, password) => {
+                if (!supabase) {
+                    console.warn('Supabase client not available for verifyAdmin');
+                    return false;
+                }
                 
                 try {
-                    await saveRating(window.currentLogId, window.currentRating, notesValue);
-                    if (window.contentSection) window.contentSection.classList.remove('hidden');
-                    if (window.ratingSection) window.ratingSection.classList.add('hidden');
-                    await loadStudentContents();
-                    alert('شكراً لك على تقييمك!');
-                } catch (error) {
-                    console.error('Error saving rating:', error);
-                    alert('خطأ في حفظ التقييم');
-                }
-            });
-        }
-        
-        if (skipRatingBtn) {
-            skipRatingBtn.addEventListener('click', function() {
-                if (window.contentSection) window.contentSection.classList.remove('hidden');
-                if (window.ratingSection) window.ratingSection.classList.add('hidden');
-                loadStudentContents();
-            });
-        }
-    }
-
-    async function saveRating(logId, rating, notes) {
-        if (!window.supabaseClient) {
-            throw new Error('System not ready');
-        }
-        
-        try {
-            await window.supabaseClient.updateStudentRating(logId, rating, notes);
-        } catch (error) {
-            console.error('Error saving rating:', error);
-            throw error;
-        }
-    }
-
-    // دالة معالجة تحميل الملفات (معدلة ومصححة تماماً)
-    function handleFileDownload(contentId, contentTitle, event) {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        
-        console.log(`محاولة تحميل الملف: ${contentTitle} (${contentId})`);
-        
-        // البحث عن المحتوى في القائمة
-        const contents = window.currentContents || [];
-        const content = contents.find(c => c.id === contentId);
-        
-        if (!content) {
-            alert('الملف غير موجود');
-            return;
-        }
-        
-        if (content.type === 'file' || content.type === 'fileWithNote') {
-            try {
-                // إنشاء رابط تحميل للملف
-                const downloadLink = document.createElement('a');
-                
-                // استخدام URL.createObjectURL للروابط المحلية
-                if (content.content.startsWith('blob:') || content.content.startsWith('http')) {
-                    downloadLink.href = content.content;
-                } else {
-                    // إذا كان رابطاً محلياً، تأكد من المسار الصحيح
-                    downloadLink.href = content.content.startsWith('/') ? content.content : '/' + content.content;
-                }
-                
-                // استخراج امتداد الملف من الرابط أو استخدام امتداد افتراضي
-                let fileExtension = getFileExtension(content.content);
-                let fileName = contentTitle + fileExtension;
-                
-                // تعيين اسم الملف للتحميل
-                downloadLink.download = fileName;
-                downloadLink.target = '_blank';
-                downloadLink.rel = 'noopener noreferrer';
-                
-                // إضافة الرابط للصفحة والنقر عليه برمجياً
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
-                
-                console.log(`✅ تم بدء تحميل الملف: ${contentTitle}`);
-                
-                // إظهار رسالة تأكيد للمستخدم
-                setTimeout(() => {
-                    showDownloadMessage(`تم بدء تحميل الملف: ${contentTitle}`, 'success');
-                }, 100);
-                
-            } catch (error) {
-                console.error('Error downloading file:', error);
-                showDownloadMessage('حدث خطأ أثناء تحميل الملف. يرجى المحاولة مرة أخرى.', 'error');
-            }
-        } else if (content.type === 'link' || content.type === 'linkWithNote') {
-            // فتح الرابط في نافذة جديدة
-            window.open(content.content, '_blank', 'noopener,noreferrer');
-        }
-    }
-
-    // دالة لعرض رسائل التحميل
-    function showDownloadMessage(message, type) {
-        // إنشاء عنصر الرسالة
-        const messageElement = document.createElement('div');
-        messageElement.className = `download-message ${type}`;
-        messageElement.textContent = message;
-        messageElement.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            z-index: 10000;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            animation: slideIn 0.3s ease-out;
-        `;
-        
-        if (type === 'success') {
-            messageElement.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
-        } else {
-            messageElement.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
-        }
-        
-        // إضافة الرسالة إلى الصفحة
-        document.body.appendChild(messageElement);
-        
-        // إزالة الرسالة بعد 5 ثواني
-        setTimeout(() => {
-            messageElement.style.animation = 'slideOut 0.3s ease-in';
-            setTimeout(() => {
-                if (messageElement.parentNode) {
-                    messageElement.parentNode.removeChild(messageElement);
-                }
-            }, 300);
-        }, 5000);
-    }
-
-    // إضافة أنيميشن للرسائل
-    if (!document.querySelector('#download-styles')) {
-        const style = document.createElement('style');
-        style.id = 'download-styles';
-        style.textContent = `
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            @keyframes slideOut {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // دالة مساعدة محسنة لاستخراج امتداد الملف
-    function getFileExtension(url) {
-        if (!url) return '.file';
-        
-        try {
-            // استخراج الامتداد من الرابط
-            const urlObj = new URL(url, window.location.origin);
-            const pathname = urlObj.pathname;
-            const urlParts = pathname.split('/').pop().split('.');
-            
-            if (urlParts.length > 1) {
-                const extension = '.' + urlParts.pop().toLowerCase();
-                
-                // التحقق من صحة الامتداد
-                const validExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', 
-                                       '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar', '.txt', 
-                                       '.mp4', '.mp3', '.wav', '.avi', '.mov'];
-                
-                if (validExtensions.includes(extension)) {
-                    return extension;
-                }
-            }
-        } catch (e) {
-            // إذا فشل إنشاء URL، حاول الطريقة البسيطة
-            const simpleParts = url.split('/').pop().split('.');
-            if (simpleParts.length > 1) {
-                return '.' + simpleParts.pop().toLowerCase();
-            }
-        }
-        
-        // إذا لم يتم التعرف على الامتداد، استخدام امتداد افتراضي
-        return '.file';
-    }
-
-    async function loadStudentContents() {
-        if (!window.currentStudent || !window.supabaseClient) {
-            console.error('Cannot load contents: system not ready');
-            return;
-        }
-        
-        try {
-            const contents = await window.supabaseClient.getContents();
-            const studentLogs = await window.supabaseClient.getStudentsLog();
-            
-            // حفظ المحتويات للنطاق العام للاستخدام في التحميل
-            window.currentContents = contents;
-            
-            if (!window.filesContainer) {
-                console.error('Files container not found');
-                return;
-            }
-            
-            window.filesContainer.innerHTML = '';
-            
-            if (contents.length === 0) {
-                window.filesContainer.innerHTML = '<p>لا توجد محتويات متاحة حالياً.</p>';
-                return;
-            }
-            
-            contents.forEach(content => {
-                const hasViewed = studentLogs.some(log => 
-                    log.studentId === window.currentStudent.id && log.contentId === content.id
-                );
-                
-                const contentElement = document.createElement('div');
-                contentElement.className = `student-file-item ${hasViewed ? 'viewed' : ''}`;
-                contentElement.innerHTML = `
-                    <div class="file-header">
-                        <h3>${content.title}</h3>
-                        <span class="status">${hasViewed ? 'تم الاطلاع ✓' : 'لم يتم الاطلاع'}</span>
-                    </div>
-                    <div class="file-content">
-                        ${renderContent(content)}
-                    </div>
-                    <div class="file-actions">
-                        ${!hasViewed ? `
-                            <div class="agreement-section">
-                                <label class="checkbox-container">
-                                    <input type="checkbox" id="agreement-${content.id}" class="agreement-checkbox">
-                                    <span class="checkmark"></span>
-                                    نعم اطلعت على المحتوى المرفق
-                                </label>
-                                <button class="btn view-btn" onclick="viewContent('${content.id}', '${content.title}')" disabled>
-                                    تأكيد الاطلاع
-                                </button>
-                            </div>
-                        ` : `
-                            <p class="viewed-message">تم تأكيد الاطلاع في: ${getViewDate(studentLogs, content.id)}</p>
-                            ${getRatingDisplay(studentLogs, content.id)}
-                        `}
-                    </div>
-                `;
-                window.filesContainer.appendChild(contentElement);
-                
-                if (!hasViewed) {
-                    const checkbox = document.getElementById(`agreement-${content.id}`);
-                    const viewBtn = contentElement.querySelector('.view-btn');
-                    
-                    if (checkbox && viewBtn) {
-                        checkbox.addEventListener('change', function() {
-                            viewBtn.disabled = !this.checked;
-                            if (this.checked) {
-                                this.parentElement.classList.add('checked');
-                            } else {
-                                this.parentElement.classList.remove('checked');
-                            }
+                    const { data, error } = await supabase
+                        .rpc('verify_password', {
+                            username_input: username,
+                            password_input: password
                         });
+                    
+                    if (error) {
+                        console.error('Error in verifyAdmin RPC:', error);
+                        return false;
                     }
+                    return data;
+                } catch (error) {
+                    console.error('Error in verifyAdmin:', error);
+                    return false;
                 }
-            });
-        } catch (error) {
-            console.error('Error loading student contents:', error);
-            if (window.filesContainer) {
-                window.filesContainer.innerHTML = '<p>خطأ في تحميل المحتويات</p>';
-            }
-        }
-    }
+            },
 
-    function renderContent(content) {
-        switch(content.type) {
-            case 'link':
-                return `
-                    <div class="content-preview">
-                        <p>رابط خارجي:</p>
-                        <a href="${content.content}" target="_blank" class="file-link" onclick="event.stopPropagation()" rel="noopener noreferrer">
-                            ${content.title} - اضغط هنا لفتح الرابط
-                        </a>
-                    </div>`;
-            case 'file':
-                return `
-                    <div class="content-preview">
-                        <p>ملف مرفوع:</p>
-                        <a href="${content.content}" class="file-link download-link" 
-                           onclick="handleFileDownload('${content.id}', '${content.title}', event)"
-                           data-content-id="${content.id}">
-                            ${content.title} - اضغط هنا لتحميل الملف
-                        </a>
-                    </div>`;
-            case 'text':
-                return `
-                    <div class="content-preview">
-                        <h4>${content.title}</h4>
-                        <p>${content.content}</p>
-                    </div>`;
-            case 'fileWithNote':
-                return `
-                    <div class="content-preview">
-                        <p>ملف مرفوع:</p>
-                        <a href="${content.content}" class="file-link download-link" 
-                           onclick="handleFileDownload('${content.id}', '${content.title}', event)"
-                           data-content-id="${content.id}">
-                            ${content.title} - اضغط هنا لتحميل الملف
-                        </a>
-                        ${content.note ? `
-                            <div class="note-section">
-                                <h4>ملاحظة:</h4>
-                                <p class="note-text">${content.note}</p>
-                            </div>
-                        ` : ''}
-                    </div>`;
-            case 'linkWithNote':
-                return `
-                    <div class="content-preview">
-                        <p>رابط خارجي:</p>
-                        <a href="${content.content}" target="_blank" class="file-link" onclick="event.stopPropagation()" rel="noopener noreferrer">
-                            ${content.title} - اضغط هنا لفتح الرابط
-                        </a>
-                        ${content.note ? `
-                            <div class="note-section">
-                                <h4>ملاحظة:</h4>
-                                <p class="note-text">${content.note}</p>
-                            </div>
-                        ` : ''}
-                    </div>`;
-            default:
-                return '<p>نوع المحتوى غير معروف</p>';
-        }
-    }
-
-    function getRatingDisplay(logs, contentId) {
-        const log = logs.find(log => 
-            log.studentId === window.currentStudent.id && log.contentId === contentId
-        );
-        
-        if (log && log.rating) {
-            const stars = '★'.repeat(log.rating) + '☆'.repeat(5 - log.rating);
-            const ratingTexts = {
-                1: '🌠 ضعيف - يحتاج تحسين',
-                2: '💫 مقبول - محتوى عادي', 
-                3: '⭐ جيد - مفيد ومتميز',
-                4: '🌟 جيد جداً - محتوى قيم',
-                5: '✨ ممتاز - إبداعي ورائع'
-            };
-            return `
-                <div class="rating-display">
-                    <strong>تقييمك:</strong> ${stars} (${ratingTexts[log.rating]})
-                    ${log.ratingNotes ? `<br><small>ملاحظاتك: ${log.ratingNotes}</small>` : ''}
-                </div>
-            `;
-        }
-        return '';
-    }
-
-    function getViewDate(logs, contentId) {
-        const log = logs.find(log => 
-            log.studentId === window.currentStudent.id && log.contentId === contentId
-        );
-        return log ? `${log.date} ${log.time}` : '';
-    }
-
-    async function saveStudentData(student) {
-        if (!window.supabaseClient) {
-            throw new Error('System not ready');
-        }
-        
-        try {
-            await window.supabaseClient.saveStudentData(student);
-        } catch (error) {
-            console.error('Error saving student data:', error);
-            throw error;
-        }
-    }
-
-    function isValidId(id) {
-        return /^\d{10}$/.test(id);
-    }
-
-    function isValidPhone(phone) {
-        return /^05\d{8}$/.test(phone);
-    }
-
-    // الدالة الرئيسية للصفحة
-    function initStudentPage() {
-        console.log('🎓 Initializing student page...');
-        
-        // حفظ العناصر في النطاق العام
-        window.loginForm = document.getElementById('studentLoginForm');
-        window.contentSection = document.getElementById('contentSection');
-        window.ratingSection = document.getElementById('ratingSection');
-        window.filesContainer = document.getElementById('filesContainer');
-        window.displayVisitorName = document.getElementById('displayVisitorName');
-        window.displayVisitorId = document.getElementById('displayVisitorId');
-        window.displayVisitorPhone = document.getElementById('displayVisitorPhone');
-        window.loginTime = document.getElementById('loginTime');
-        
-        // تهيئة المتغيرات العامة
-        window.currentStudent = {
-            name: '',
-            id: '',
-            phone: ''
-        };
-        
-        window.currentRating = 0;
-        window.currentContentId = '';
-        window.currentContentTitle = '';
-        window.currentLogId = '';
-        
-        // إعداد نظام التقييم
-        setupRatingSystem();
-        
-        // إعداد معالجة النقر على روابط التحميل
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('download-link')) {
-                e.preventDefault();
-                const contentId = e.target.getAttribute('data-content-id');
-                const contentTitle = e.target.textContent.replace(' - اضغط هنا لتحميل الملف', '').trim();
-                handleFileDownload(contentId, contentTitle, e);
-            }
-        });
-        
-        // إعداد نموذج التسجيل
-        if (window.loginForm) {
-            window.loginForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
+            // دوال المحتويات
+            getContents: async () => {
+                if (!supabase) {
+                    console.warn('Supabase client not available for getContents');
+                    return [];
+                }
                 
-                const studentName = document.getElementById('studentName').value.trim();
-                const studentId = document.getElementById('studentId').value.trim();
-                const studentPhone = document.getElementById('studentPhone').value.trim();
-                
-                if (studentName && studentId && studentPhone) {
-                    if (!isValidId(studentId)) {
-                        alert('يرجى إدخال رقم هوية صحيح (10 أرقام)');
-                        return;
+                try {
+                    const { data, error } = await supabase
+                        .from('contents')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error getting contents:', error);
+                        return [];
                     }
                     
-                    if (!isValidPhone(studentPhone)) {
-                        alert('يرجى إدخال رقم جوال صحيح (يبدأ بـ 05 ويحتوي على 10 أرقام)');
-                        return;
+                    return data.map(item => ({
+                        id: item.id,
+                        type: item.type,
+                        title: item.title,
+                        content: item.content,
+                        note: item.note,
+                        date: new Date(item.created_at).toLocaleString('ar-SA')
+                    }));
+                } catch (error) {
+                    console.error('Error getting contents:', error);
+                    return [];
+                }
+            },
+
+            addContent: async (contentData) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('contents')
+                        .insert([{
+                            type: contentData.type,
+                            title: contentData.title,
+                            content: contentData.content,
+                            note: contentData.note || ''
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    return {
+                        id: data.id,
+                        type: data.type,
+                        title: data.title,
+                        content: data.content,
+                        note: data.note,
+                        date: new Date(data.created_at).toLocaleString('ar-SA')
+                    };
+                } catch (error) {
+                    console.error('Error adding content:', error);
+                    throw error;
+                }
+            },
+
+            deleteContent: async (contentId) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { error } = await supabase
+                        .from('contents')
+                        .delete()
+                        .eq('id', contentId);
+                    
+                    if (error) throw error;
+                } catch (error) {
+                    console.error('Error deleting content:', error);
+                    throw error;
+                }
+            },
+
+            // دوال بيانات الزوار
+            getStudentsData: async () => {
+                if (!supabase) {
+                    console.warn('Supabase client not available for getStudentsData');
+                    return [];
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('students_data')
+                        .select('*')
+                        .order('first_login', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error getting students data:', error);
+                        return [];
                     }
                     
-                    try {
-                        // التحقق من تطابق البيانات إذا كان الزائر مسجل مسبقاً
-                        const studentsData = await window.supabaseClient.getStudentsData();
-                        const existingStudent = studentsData.find(s => s.id === studentId);
-                        
-                        if (existingStudent) {
-                            if (existingStudent.name !== studentName || existingStudent.phone !== studentPhone) {
-                                alert('البيانات لا تتطابق مع السجل السابق. يرجى التأكد من الاسم ورقم الجوال، أو التواصل مع مشرف البرنامج في حال النسيان.');
-                                return;
-                            }
+                    return data.map(item => ({
+                        name: item.name,
+                        id: item.id,
+                        phone: item.phone,
+                        firstLogin: new Date(item.first_login).toLocaleString('ar-SA')
+                    }));
+                } catch (error) {
+                    console.error('Error getting students data:', error);
+                    return [];
+                }
+            },
+
+            saveStudentData: async (student) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('students_data')
+                        .upsert([{
+                            id: student.id,
+                            name: student.name,
+                            phone: student.phone
+                        }], { 
+                            onConflict: 'id'
+                        })
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    return {
+                        name: data.name,
+                        id: data.id,
+                        phone: data.phone,
+                        firstLogin: new Date(data.first_login).toLocaleString('ar-SA')
+                    };
+                } catch (error) {
+                    console.error('Error saving student data:', error);
+                    throw error;
+                }
+            },
+
+            updateStudentData: async (oldId, newData) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    if (oldId !== newData.id) {
+                        await supabaseClient.deleteStudent(oldId);
+                    }
+                    
+                    return await supabaseClient.saveStudentData(newData);
+                } catch (error) {
+                    console.error('Error updating student data:', error);
+                    throw error;
+                }
+            },
+
+            deleteStudent: async (studentId) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { error } = await supabase
+                        .from('students_data')
+                        .delete()
+                        .eq('id', studentId);
+                    
+                    if (error) throw error;
+                } catch (error) {
+                    console.error('Error deleting student:', error);
+                    throw error;
+                }
+            },
+
+            // دوال سجلات الاطلاع
+            getStudentsLog: async () => {
+                if (!supabase) {
+                    console.warn('Supabase client not available for getStudentsLog');
+                    return [];
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('students_log')
+                        .select('*')
+                        .order('view_date', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error getting students log:', error);
+                        return [];
+                    }
+                    
+                    return data.map(item => ({
+                        id: item.id,
+                        studentName: item.student_name,
+                        studentId: item.student_id,
+                        studentPhone: item.student_phone,
+                        contentId: item.content_id,
+                        contentTitle: item.content_title,
+                        date: new Date(item.view_date).toLocaleDateString('ar-SA'),
+                        time: new Date(item.view_date).toLocaleTimeString('ar-SA'),
+                        timestamp: new Date(item.view_date).getTime(),
+                        rating: item.rating || 0,
+                        ratingNotes: item.rating_notes || '',
+                        ratingDate: item.rating_date ? new Date(item.rating_date).toLocaleString('ar-SA') : ''
+                    }));
+                } catch (error) {
+                    console.error('Error getting students log:', error);
+                    return [];
+                }
+            },
+
+            addStudentLog: async (logData) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('students_log')
+                        .insert([{
+                            student_name: logData.studentName,
+                            student_id: logData.studentId,
+                            student_phone: logData.studentPhone,
+                            content_id: logData.contentId,
+                            content_title: logData.contentTitle
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    return {
+                        id: data.id,
+                        studentName: data.student_name,
+                        studentId: data.student_id,
+                        studentPhone: data.student_phone,
+                        contentId: data.content_id,
+                        contentTitle: data.content_title,
+                        date: new Date(data.view_date).toLocaleDateString('ar-SA'),
+                        time: new Date(data.view_date).toLocaleTimeString('ar-SA'),
+                        timestamp: new Date(data.view_date).getTime(),
+                        rating: data.rating || 0,
+                        ratingNotes: data.rating_notes || '',
+                        ratingDate: data.rating_date ? new Date(data.rating_date).toLocaleString('ar-SA') : ''
+                    };
+                } catch (error) {
+                    console.error('Error adding student log:', error);
+                    throw error;
+                }
+            },
+
+            updateStudentRating: async (logId, rating, ratingNotes) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('students_log')
+                        .update({
+                            rating: rating,
+                            rating_notes: ratingNotes,
+                            rating_date: new Date().toISOString()
+                        })
+                        .eq('id', logId)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    return {
+                        id: data.id,
+                        studentName: data.student_name,
+                        studentId: data.student_id,
+                        studentPhone: data.student_phone,
+                        contentId: data.content_id,
+                        contentTitle: data.content_title,
+                        date: new Date(data.view_date).toLocaleDateString('ar-SA'),
+                        time: new Date(data.view_date).toLocaleTimeString('ar-SA'),
+                        timestamp: new Date(data.view_date).getTime(),
+                        rating: data.rating,
+                        ratingNotes: data.rating_notes,
+                        ratingDate: new Date(data.rating_date).toLocaleString('ar-SA')
+                    };
+                } catch (error) {
+                    console.error('Error updating student rating:', error);
+                    throw error;
+                }
+            },
+
+            deleteStudentLog: async (logId) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { error } = await supabase
+                        .from('students_log')
+                        .delete()
+                        .eq('id', logId);
+                    
+                    if (error) throw error;
+                } catch (error) {
+                    console.error('Error deleting student log:', error);
+                    throw error;
+                }
+            },
+
+            // دوال التذاكر
+            getTickets: async () => {
+                if (!supabase) {
+                    console.warn('Supabase client not available for getTickets');
+                    return [];
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('support_tickets')
+                        .select('*')
+                        .order('created_date', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error getting tickets:', error);
+                        return [];
+                    }
+                    
+                    return data.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        identity: item.identity,
+                        description: item.description,
+                        status: item.status,
+                        createdDate: new Date(item.created_date).toLocaleString('ar-SA'),
+                        createdTimestamp: new Date(item.created_date).getTime(),
+                        responses: item.responses || [],
+                        lastUpdate: new Date(item.last_update).toLocaleString('ar-SA')
+                    }));
+                } catch (error) {
+                    console.error('Error getting tickets:', error);
+                    return [];
+                }
+            },
+
+            createTicket: async (ticketData) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    // استخدام insert بدون select لتجنب الخطأ 409
+                    const { error } = await supabase
+                        .from('support_tickets')
+                        .insert([{
+                            id: ticketData.id,
+                            title: ticketData.title,
+                            identity: ticketData.identity,
+                            description: ticketData.description,
+                            status: ticketData.status || 'مفتوحة',
+                            responses: ticketData.responses || []
+                        }]);
+                    
+                    if (error) {
+                        // إذا كان الخطأ 409 (تعارض)، حاول مع ID مختلف
+                        if (error.code === '23505') { // PostgreSQL unique violation
+                            const newTicketId = 'T' + Date.now().toString();
+                            console.log(`🔄 Ticket ID conflict, retrying with new ID: ${newTicketId}`);
+                            
+                            const { error: retryError } = await supabase
+                                .from('support_tickets')
+                                .insert([{
+                                    id: newTicketId,
+                                    title: ticketData.title,
+                                    identity: ticketData.identity,
+                                    description: ticketData.description,
+                                    status: ticketData.status || 'مفتوحة',
+                                    responses: ticketData.responses || []
+                                }]);
+                            
+                            if (retryError) throw retryError;
+                            return newTicketId;
                         }
-                        
-                        window.currentStudent = {
-                            name: studentName,
-                            id: studentId,
-                            phone: studentPhone
-                        };
-                        
-                        await saveStudentData(window.currentStudent);
-                        
-                        if (window.displayVisitorName) window.displayVisitorName.textContent = window.currentStudent.name;
-                        if (window.displayVisitorId) window.displayVisitorId.textContent = window.currentStudent.id;
-                        if (window.displayVisitorPhone) window.displayVisitorPhone.textContent = window.currentStudent.phone;
-                        if (window.loginTime) window.loginTime.textContent = new Date().toLocaleString('ar-SA');
-                        
-                        if (window.loginForm) window.loginForm.classList.add('hidden');
-                        if (window.contentSection) window.contentSection.classList.remove('hidden');
-                        
-                        await loadStudentContents();
-                    } catch (error) {
-                        console.error('Error during login:', error);
-                        alert('حدث خطأ أثناء تسجيل الدخول: ' + error.message);
+                        throw error;
                     }
-                } else {
-                    alert('يرجى ملء جميع الحقول المطلوبة');
+                    
+                    return ticketData.id;
+                } catch (error) {
+                    console.error('Error creating ticket:', error);
+                    throw new Error('فشل في إنشاء التذكرة: ' + (error.message || 'خطأ غير معروف'));
                 }
-            });
-        }
+            },
+
+            updateTicket: async (ticketId, updates) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('support_tickets')
+                        .update(updates)
+                        .eq('id', ticketId)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    return {
+                        id: data.id,
+                        title: data.title,
+                        identity: data.identity,
+                        description: data.description,
+                        status: data.status,
+                        createdDate: new Date(data.created_date).toLocaleString('ar-SA'),
+                        createdTimestamp: new Date(data.created_date).getTime(),
+                        responses: data.responses || [],
+                        lastUpdate: new Date(data.last_update).toLocaleString('ar-SA')
+                    };
+                } catch (error) {
+                    console.error('Error updating ticket:', error);
+                    throw error;
+                }
+            },
+
+            deleteTicket: async (ticketId) => {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                try {
+                    const { error } = await supabase
+                        .from('support_tickets')
+                        .delete()
+                        .eq('id', ticketId);
+                    
+                    if (error) throw error;
+                } catch (error) {
+                    console.error('Error deleting ticket:', error);
+                    throw error;
+                }
+            }
+        };
+
+        // جعل الدوال متاحة عالمياً
+        window.supabaseClient = supabaseClient;
+        window.supabase = supabase;
+        window.isSupabaseInitialized = true;
+
+        console.log('✅ Supabase functions initialized successfully');
         
-        console.log('✅ Student page initialized successfully');
+        // إرسال إشارة أن Supabase جاهز
+        document.dispatchEvent(new CustomEvent('supabaseReady'));
+
+    } catch (error) {
+        console.error('❌ Error creating Supabase client:', error);
+        setupFallbackMode();
     }
+}
 
-    // جعل الدوال متاحة عالمياً
-    window.viewContent = async function(contentId, contentTitle) {
-        try {
-            const logData = {
-                studentName: window.currentStudent.name,
-                studentId: window.currentStudent.id,
-                studentPhone: window.currentStudent.phone,
-                contentId: contentId,
-                contentTitle: contentTitle
-            };
-            
-            const result = await window.supabaseClient.addStudentLog(logData);
-            window.currentLogId = result.id;
-            
-            // إعداد نظام التقييم
-            window.currentContentId = contentId;
-            window.currentContentTitle = contentTitle;
-            window.currentRating = 0;
-            
-            // تحديث عنوان المحتوى في واجهة التقييم
-            const ratingContentTitle = document.getElementById('ratingContentTitle');
-            if (ratingContentTitle) ratingContentTitle.textContent = contentTitle;
-            
-            // إعادة تعيين النجوم
-            document.querySelectorAll('.star').forEach(star => {
-                star.classList.remove('active');
-            });
-            
-            const ratingNotes = document.getElementById('ratingNotes');
-            if (ratingNotes) ratingNotes.value = '';
-            
-            const currentRatingText = document.getElementById('currentRatingText');
-            if (currentRatingText) currentRatingText.textContent = 'لم يتم اختيار تقييم بعد';
-            
-            const submitRatingBtn = document.getElementById('submitRating');
-            if (submitRatingBtn) submitRatingBtn.disabled = true;
-            
-            // إظهار قسم التقييم وإخفاء المحتوى
-            if (window.contentSection) window.contentSection.classList.add('hidden');
-            if (window.ratingSection) window.ratingSection.classList.remove('hidden');
-        } catch (error) {
-            console.error('Error viewing content:', error);
-            alert('خطأ في تأكيد الاطلاع');
-        }
+function setupFallbackMode() {
+    console.log('🛡️ Setting up fallback mode...');
+    
+    // إنشاء دوال وهمية في حالة الفشل
+    window.supabaseClient = {
+        verifyAdmin: async () => false,
+        getContents: async () => [],
+        addContent: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteContent: async () => { throw new Error('النظام غير متاح حالياً'); },
+        getStudentsData: async () => [],
+        saveStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
+        updateStudentData: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteStudent: async () => { throw new Error('النظام غير متاح حالياً'); },
+        getStudentsLog: async () => [],
+        addStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
+        updateStudentRating: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteStudentLog: async () => { throw new Error('النظام غير متاح حالياً'); },
+        getTickets: async () => [],
+        createTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
+        updateTicket: async () => { throw new Error('النظام غير متاح حالياً'); },
+        deleteTicket: async () => { throw new Error('النظام غير متاح حالياً'); }
     };
-
-    // إضافة دالة تحميل الملفات للنطاق العام
-    window.handleFileDownload = handleFileDownload;
-
-    // بدء التطبيق عند اكتمال التحميل
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('📄 Student page DOM loaded');
-        
-        // الانتظار حتى يكون Supabase جاهزاً
-        document.addEventListener('supabaseReady', function() {
-            console.log('✅ Supabase ready, initializing student page...');
-            setTimeout(initStudentPage, 100);
-        });
-        
-        // إذا كان supabase جاهزاً بالفعل
-        if (window.supabaseClient && window.isSupabaseInitialized) {
-            console.log('✅ Supabase already ready, initializing student page...');
-            setTimeout(initStudentPage, 100);
-        }
-    });
+    
+    window.supabase = {};
+    window.isSupabaseInitialized = true;
+    
+    console.log('✅ Fallback mode activated');
+    
+    // إرسال إشارة أن النظام جاهز (حتى في الوضع الافتراضي)
+    document.dispatchEvent(new CustomEvent('supabaseReady'));
 }

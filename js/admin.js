@@ -461,16 +461,16 @@ async function openTicketManagement(ticketId) {
                         </div>
                         
                         <div class="response-section">
-                            <h4>إضافة رد</h4>
+                            <h4>إضافة رد كمسؤول</h4>
                             <textarea id="responseMessage" rows="4" placeholder="أدخل ردك هنا..."></textarea>
                             <button class="btn" onclick="addResponse('${ticket.id}')">إضافة رد</button>
                         </div>
                         
                         ${ticket.responses.length > 0 ? `
                             <div class="responses-list">
-                                <h4>الردود السابقة:</h4>
+                                <h4>سجل المحادثة:</h4>
                                 ${ticket.responses.map((response, index) => `
-                                    <div class="response-item">
+                                    <div class="response-item ${response.responder === 'الزائر' ? 'visitor-response' : 'admin-response'}">
                                         <div class="response-header">
                                             <strong>${response.responder}</strong>
                                             <span class="response-date">${response.date}</span>
@@ -479,7 +479,7 @@ async function openTicketManagement(ticketId) {
                                     </div>
                                 `).join('')}
                             </div>
-                        ` : ''}
+                        ` : '<div class="no-responses"><p>لا توجد ردود حتى الآن</p></div>'}
                         
                         <div class="modal-actions">
                             <button class="btn" onclick="updateTicketStatusAndClose('${ticket.id}')">حفظ التغييرات</button>
@@ -1005,73 +1005,4 @@ async function handleUploadForm(e) {
     if (type === 'fileWithNote') {
         note = document.getElementById('contentNote').value.trim();
         if (note.length < 3) {
-            alert('يرجى إدخال ملاحظة حول الملف');
-            return;
-        }
-    }
-    
-    if (title && content) {
-        try {
-            await addNewContent(type, title, content, note);
-            document.getElementById('uploadForm').reset();
-            // إعادة تعيين الحقول المخفية
-            handleContentTypeChange.call(document.getElementById('contentType'));
-        } catch (error) {
-            alert('خطأ في إضافة المحتوى: ' + error.message);
-        }
-    } else {
-        alert('يرجى ملء جميع الحقول المطلوبة');
-    }
-}
-
-// دالة لتحويل الملف إلى Base64
-function convertFileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            // إرجاع البيانات كـ Base64 مع معلومات الملف
-            const fileData = {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                data: reader.result.split(',')[1] // إزالة header البيانات
-            };
-            resolve(JSON.stringify(fileData));
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
-async function addNewContent(type, title, content, note = '') {
-    try {
-        await window.supabaseClient.addContent({
-            type: type,
-            title: title,
-            content: content,
-            note: note
-        });
-        await loadFilesList();
-        alert('تم إضافة المحتوى بنجاح!');
-    } catch (error) {
-        console.error('Error adding content:', error);
-        throw error;
-    }
-}
-
-// جعل جميع الدوال متاحة في النطاق العام
-window.openTicketManagement = openTicketManagement;
-window.addResponse = addResponse;
-window.updateTicketStatusAndClose = updateTicketStatusAndClose;
-window.deleteTicket = deleteTicket;
-window.closeTicketModal = closeTicketModal;
-window.loadTicketsData = loadTicketsData;
-window.updateTicketsStats = updateTicketsStats;
-window.printVisitorsList = printVisitorsList;
-window.printContentsList = printContentsList;
-window.adminDeleteContent = adminDeleteContent;
-window.openEditStudentModal = openEditStudentModal;
-window.deleteStudent = deleteStudent;
-window.editRating = editRating;
-window.deleteRating = deleteRating;
-window.deleteStudentLog = deleteStudentLog;
+            alert('يرجى إدخال ملاحظة

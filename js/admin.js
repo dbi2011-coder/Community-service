@@ -1,36 +1,3 @@
-// js/admin.js - إضافة هذا الكود في بداية الملف
-// التحقق من التحميل المزدوج
-if (window.adminPageInitialized) {
-    console.log('⚠️ Admin page already initialized, skipping...');
-} else {
-    window.adminPageInitialized = true;
-
-    // الكود الأصلي لـ admin.js يبدأ من هنا...
-    // بيانات تسجيل الدخول الافتراضية
-    const ADMIN_CREDENTIALS = {
-        username: "عمرو بن العاص",
-        password: "10243"
-    };
-
-    // متغيرات عامة
-    let currentSortOrder = 'date';
-
-    // الانتظار حتى يكون Supabase جاهزاً
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('👨‍💼 Initializing admin page...');
-        
-        document.addEventListener('supabaseReady', initAdminPage);
-        
-        // إذا كان supabase جاهزاً بالفعل
-        if (window.supabaseClient && window.isSupabaseInitialized) {
-            console.log('✅ Supabase already ready, initializing admin page...');
-            setTimeout(initAdminPage, 100);
-        }
-    });
-
-    // باقي الكود كما هو...
-    // [يتبع نفس الكود السابق لـ admin.js]
-}
 // js/admin.js - الملف المعدل ليعمل مع Supabase
 // بيانات تسجيل الدخول الافتراضية
 const ADMIN_CREDENTIALS = {
@@ -916,12 +883,12 @@ function handleContentTypeChange() {
     const fileWithNoteInput = document.getElementById('fileWithNoteInput');
     const linkWithNoteInput = document.getElementById('linkWithNoteInput');
     
-    if (linkInput) linkInput.classList.add('hidden');
-    if (fileInput) fileInput.classList.add('hidden');
-    if (textInput) textInput.classList.add('hidden');
-    if (fileWithNoteInput) fileWithNoteInput.classList.add('hidden');
-    if (linkWithNoteInput) linkWithNoteInput.classList.add('hidden');
+    // إخفاء جميع الحقول أولاً
+    [linkInput, fileInput, textInput, fileWithNoteInput, linkWithNoteInput].forEach(input => {
+        if (input) input.classList.add('hidden');
+    });
     
+    // إظهار الحقل المناسب
     switch(this.value) {
         case 'link':
             if (linkInput) linkInput.classList.remove('hidden');
@@ -958,12 +925,23 @@ async function handleUploadForm(e) {
             }
             break;
         case 'file':
-            const file = document.getElementById('contentFile').files[0];
-            if (file) {
-                // في بيئة حقيقية، يجب رفع الملف إلى خدمة تخزين
-                content = URL.createObjectURL(file);
-            } else {
+        case 'fileWithNote':
+            const fileInput = type === 'file' ? 
+                document.getElementById('contentFile') : 
+                document.getElementById('contentFileWithNote');
+            const file = fileInput.files[0];
+            
+            if (!file) {
                 alert('يرجى اختيار ملف');
+                return;
+            }
+            
+            try {
+                // تحويل الملف إلى Base64 لتخزينه
+                content = await convertFileToBase64(file);
+            } catch (error) {
+                console.error('Error converting file:', error);
+                alert('خطأ في معالجة الملف');
                 return;
             }
             break;
@@ -971,20 +949,6 @@ async function handleUploadForm(e) {
             content = document.getElementById('contentText').value.trim();
             if (content.length < 5) {
                 alert('يرجى إدخال نص ذو محتوى');
-                return;
-            }
-            break;
-        case 'fileWithNote':
-            const fileWithNote = document.getElementById('contentFileWithNote').files[0];
-            note = document.getElementById('contentNote').value.trim();
-            if (fileWithNote) {
-                content = URL.createObjectURL(fileWithNote);
-            } else {
-                alert('يرجى اختيار ملف');
-                return;
-            }
-            if (note.length < 3) {
-                alert('يرجى إدخال ملاحظة حول الملف');
                 return;
             }
             break;
@@ -1002,16 +966,46 @@ async function handleUploadForm(e) {
             break;
     }
     
+    // الحصول على الملاحظة لأنواع الملفات مع ملاحظة
+    if (type === 'fileWithNote') {
+        note = document.getElementById('contentNote').value.trim();
+        if (note.length < 3) {
+            alert('يرجى إدخال ملاحظة حول الملف');
+            return;
+        }
+    }
+    
     if (title && content) {
         try {
             await addNewContent(type, title, content, note);
             document.getElementById('uploadForm').reset();
+            // إعادة تعيين الحقول المخفية
+            handleContentTypeChange.call(document.getElementById('contentType'));
         } catch (error) {
-            alert('خطأ في إضافة المحتوى');
+            alert('خطأ في إضافة المحتوى: ' + error.message);
         }
     } else {
         alert('يرجى ملء جميع الحقول المطلوبة');
     }
+}
+
+// دالة لتحويل الملف إلى Base64
+function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            // إرجاع البيانات كـ Base64 مع معلومات الملف
+            const fileData = {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                data: reader.result.split(',')[1] // إزالة header البيانات
+            };
+            resolve(JSON.stringify(fileData));
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 async function addNewContent(type, title, content, note = '') {
@@ -1046,4 +1040,3 @@ window.deleteStudent = deleteStudent;
 window.editRating = editRating;
 window.deleteRating = deleteRating;
 window.deleteStudentLog = deleteStudentLog;
-

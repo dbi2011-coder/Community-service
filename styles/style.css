@@ -1625,3 +1625,127 @@ tr:hover {
 .student-file-item .file-info p:last-child {
     border-bottom: none;
 }
+/* أنماط جديدة لنظام الردود في التذاكر */
+
+.visitor-response-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    margin: 20px 0;
+}
+
+.visitor-response-section h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.visitor-response-section textarea {
+    width: 100%;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 12px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 100px;
+}
+
+.response-note {
+    font-size: 12px;
+    color: #666;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+.ticket-closed-message {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    margin: 20px 0;
+    color: #856404;
+}
+
+/* تنسيق الردود المختلفة */
+.visitor-response {
+    background: #e8f5e8;
+    border-right: 4px solid #27ae60;
+}
+
+.admin-response {
+    background: #e3f2fd;
+    border-right: 4px solid #2196f3;
+}
+
+.response-badge {
+    background: #27ae60;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+/* تحسين عرض سجل المحادثة */
+.ticket-responses {
+    margin: 25px 0;
+}
+
+.ticket-responses h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #eee;
+}
+
+.response-item {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.response-item:hover {
+    transform: translateX(-5px);
+}
+
+.response-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.response-header strong {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.response-date {
+    color: #666;
+    font-size: 12px;
+}
+
+.response-item p {
+    margin: 0;
+    line-height: 1.5;
+    color: #333;
+}
+
+/* تحسين عرض قائمة التذاكر */
+.ticket-result .ticket-info p:last-child {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.ticket-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}

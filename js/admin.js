@@ -1,36 +1,3 @@
-// js/admin.js - إضافة هذا الكود في بداية الملف
-// التحقق من التحميل المزدوج
-if (window.adminPageInitialized) {
-    console.log('⚠️ Admin page already initialized, skipping...');
-} else {
-    window.adminPageInitialized = true;
-
-    // الكود الأصلي لـ admin.js يبدأ من هنا...
-    // بيانات تسجيل الدخول الافتراضية
-    const ADMIN_CREDENTIALS = {
-        username: "عمرو بن العاص",
-        password: "10243"
-    };
-
-    // متغيرات عامة
-    let currentSortOrder = 'date';
-
-    // الانتظار حتى يكون Supabase جاهزاً
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('👨‍💼 Initializing admin page...');
-        
-        document.addEventListener('supabaseReady', initAdminPage);
-        
-        // إذا كان supabase جاهزاً بالفعل
-        if (window.supabaseClient && window.isSupabaseInitialized) {
-            console.log('✅ Supabase already ready, initializing admin page...');
-            setTimeout(initAdminPage, 100);
-        }
-    });
-
-    // باقي الكود كما هو...
-    // [يتبع نفس الكود السابق لـ admin.js]
-}
 // js/admin.js - الملف المعدل ليعمل مع Supabase
 // بيانات تسجيل الدخول الافتراضية
 const ADMIN_CREDENTIALS = {
@@ -941,6 +908,47 @@ function handleContentTypeChange() {
     }
 }
 
+// دالة رفع الملفات إلى التخزين
+async function uploadFileToStorage(file, title) {
+    if (!window.supabaseClient || !window.supabase) {
+        throw new Error('النظام غير متاح حالياً');
+    }
+    
+    try {
+        // إنشاء اسم فريد للملف
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${title.replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+        
+        // رفع الملف إلى Supabase Storage
+        const { data, error } = await window.supabase.storage
+            .from('content-files')
+            .upload(fileName, file);
+        
+        if (error) {
+            console.error('Error uploading file:', error);
+            throw new Error('فشل في رفع الملف');
+        }
+        
+        // الحصول على رابط التحميل العام
+        const { data: urlData } = window.supabase.storage
+            .from('content-files')
+            .getPublicUrl(fileName);
+        
+        return urlData.publicUrl;
+        
+    } catch (error) {
+        console.error('Error in uploadFileToStorage:', error);
+        
+        // حل بديل: إنشاء رابط مؤقت إذا فشل الرفع
+        if (file) {
+            console.log('Using fallback file URL');
+            return URL.createObjectURL(file);
+        }
+        
+        throw error;
+    }
+}
+
 async function handleUploadForm(e) {
     e.preventDefault();
     
@@ -957,16 +965,24 @@ async function handleUploadForm(e) {
                 return;
             }
             break;
+            
         case 'file':
             const file = document.getElementById('contentFile').files[0];
             if (file) {
-                // في بيئة حقيقية، يجب رفع الملف إلى خدمة تخزين
-                content = URL.createObjectURL(file);
+                try {
+                    // رفع الملف إلى Supabase Storage
+                    const fileUrl = await uploadFileToStorage(file, title);
+                    content = fileUrl;
+                } catch (error) {
+                    alert('خطأ في رفع الملف: ' + error.message);
+                    return;
+                }
             } else {
                 alert('يرجى اختيار ملف');
                 return;
             }
             break;
+            
         case 'text':
             content = document.getElementById('contentText').value.trim();
             if (content.length < 5) {
@@ -974,11 +990,19 @@ async function handleUploadForm(e) {
                 return;
             }
             break;
+            
         case 'fileWithNote':
             const fileWithNote = document.getElementById('contentFileWithNote').files[0];
             note = document.getElementById('contentNote').value.trim();
             if (fileWithNote) {
-                content = URL.createObjectURL(fileWithNote);
+                try {
+                    // رفع الملف إلى Supabase Storage
+                    const fileUrl = await uploadFileToStorage(fileWithNote, title);
+                    content = fileUrl;
+                } catch (error) {
+                    alert('خطأ في رفع الملف: ' + error.message);
+                    return;
+                }
             } else {
                 alert('يرجى اختيار ملف');
                 return;
@@ -988,6 +1012,7 @@ async function handleUploadForm(e) {
                 return;
             }
             break;
+            
         case 'linkWithNote':
             content = document.getElementById('contentLinkWithNote').value.trim();
             note = document.getElementById('contentLinkNote').value.trim();
@@ -1006,8 +1031,9 @@ async function handleUploadForm(e) {
         try {
             await addNewContent(type, title, content, note);
             document.getElementById('uploadForm').reset();
+            alert('تم إضافة المحتوى بنجاح!');
         } catch (error) {
-            alert('خطأ في إضافة المحتوى');
+            alert('خطأ في إضافة المحتوى: ' + error.message);
         }
     } else {
         alert('يرجى ملء جميع الحقول المطلوبة');
@@ -1046,4 +1072,4 @@ window.deleteStudent = deleteStudent;
 window.editRating = editRating;
 window.deleteRating = deleteRating;
 window.deleteStudentLog = deleteStudentLog;
-
+window.uploadFileToStorage = uploadFileToStorage;

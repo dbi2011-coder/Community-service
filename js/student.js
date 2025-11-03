@@ -127,7 +127,7 @@ async function saveRating(logId, rating, notes) {
     }
 }
 
-// دالة معالجة تحميل الملفات (معدلة ومصححة)
+// دالة معالجة تحميل الملفات (معدلة ومصححة تماماً)
 function handleFileDownload(contentId, contentTitle, event) {
     if (event) {
         event.preventDefault();
@@ -149,7 +149,14 @@ function handleFileDownload(contentId, contentTitle, event) {
         try {
             // إنشاء رابط تحميل للملف
             const downloadLink = document.createElement('a');
-            downloadLink.href = content.content;
+            
+            // استخدام URL.createObjectURL للروابط المحلية
+            if (content.content.startsWith('blob:') || content.content.startsWith('http')) {
+                downloadLink.href = content.content;
+            } else {
+                // إذا كان رابطاً محلياً، تأكد من المسار الصحيح
+                downloadLink.href = content.content.startsWith('/') ? content.content : '/' + content.content;
+            }
             
             // استخراج امتداد الملف من الرابط أو استخدام امتداد افتراضي
             let fileExtension = getFileExtension(content.content);
@@ -158,6 +165,7 @@ function handleFileDownload(contentId, contentTitle, event) {
             // تعيين اسم الملف للتحميل
             downloadLink.download = fileName;
             downloadLink.target = '_blank';
+            downloadLink.rel = 'noopener noreferrer';
             
             // إضافة الرابط للصفحة والنقر عليه برمجياً
             document.body.appendChild(downloadLink);
@@ -168,38 +176,119 @@ function handleFileDownload(contentId, contentTitle, event) {
             
             // إظهار رسالة تأكيد للمستخدم
             setTimeout(() => {
-                alert(`تم بدء تحميل الملف: ${contentTitle}\nإذا لم يبدأ التحميل تلقائياً، يرجى التحقق من إعدادات المتصفح.`);
-            }, 500);
+                showDownloadMessage(`تم بدء تحميل الملف: ${contentTitle}`, 'success');
+            }, 100);
             
         } catch (error) {
             console.error('Error downloading file:', error);
-            alert('حدث خطأ أثناء تحميل الملف. يرجى المحاولة مرة أخرى.');
+            showDownloadMessage('حدث خطأ أثناء تحميل الملف. يرجى المحاولة مرة أخرى.', 'error');
         }
     } else if (content.type === 'link' || content.type === 'linkWithNote') {
         // فتح الرابط في نافذة جديدة
-        window.open(content.content, '_blank');
+        window.open(content.content, '_blank', 'noopener,noreferrer');
     }
+}
+
+// دالة لعرض رسائل التحميل
+function showDownloadMessage(message, type) {
+    // إنشاء عنصر الرسالة
+    const messageElement = document.createElement('div');
+    messageElement.className = `download-message ${type}`;
+    messageElement.textContent = message;
+    messageElement.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    if (type === 'success') {
+        messageElement.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
+    } else {
+        messageElement.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+    }
+    
+    // إضافة الرسالة إلى الصفحة
+    document.body.appendChild(messageElement);
+    
+    // إزالة الرسالة بعد 5 ثواني
+    setTimeout(() => {
+        messageElement.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+            if (messageElement.parentNode) {
+                messageElement.parentNode.removeChild(messageElement);
+            }
+        }, 300);
+    }, 5000);
+}
+
+// إضافة أنيميشن للرسائل
+if (!document.querySelector('#download-styles')) {
+    const style = document.createElement('style');
+    style.id = 'download-styles';
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // دالة مساعدة محسنة لاستخراج امتداد الملف
 function getFileExtension(url) {
     if (!url) return '.file';
     
-    // استخراج الامتداد من الرابط
-    const urlParts = url.split('/').pop().split('.');
-    if (urlParts.length > 1) {
-        const extension = '.' + urlParts.pop().toLowerCase();
+    try {
+        // استخراج الامتداد من الرابط
+        const urlObj = new URL(url, window.location.origin);
+        const pathname = urlObj.pathname;
+        const urlParts = pathname.split('/').pop().split('.');
         
-        // التحقق من صحة الامتداد
-        const validExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', 
-                               '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar', '.txt'];
-        
-        if (validExtensions.includes(extension)) {
-            return extension;
+        if (urlParts.length > 1) {
+            const extension = '.' + urlParts.pop().toLowerCase();
+            
+            // التحقق من صحة الامتداد
+            const validExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', 
+                                   '.jpg', '.jpeg', '.png', '.gif', '.zip', '.rar', '.txt', 
+                                   '.mp4', '.mp3', '.wav', '.avi', '.mov'];
+            
+            if (validExtensions.includes(extension)) {
+                return extension;
+            }
+        }
+    } catch (e) {
+        // إذا فشل إنشاء URL، حاول الطريقة البسيطة
+        const simpleParts = url.split('/').pop().split('.');
+        if (simpleParts.length > 1) {
+            return '.' + simpleParts.pop().toLowerCase();
         }
     }
     
-    // إذا لم يتم التعرف على الامتداد، استخدام امتداد افتراضي بناءً على نوع المحتوى
+    // إذا لم يتم التعرف على الامتداد، استخدام امتداد افتراضي
     return '.file';
 }
 
@@ -293,7 +382,7 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>رابط خارجي:</p>
-                    <a href="${content.content}" target="_blank" class="file-link" onclick="event.stopPropagation()">
+                    <a href="${content.content}" target="_blank" class="file-link" onclick="event.stopPropagation()" rel="noopener noreferrer">
                         ${content.title} - اضغط هنا لفتح الرابط
                     </a>
                 </div>`;
@@ -301,8 +390,9 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" class="file-link" 
-                       onclick="handleFileDownload('${content.id}', '${content.title}', event)">
+                    <a href="${content.content}" class="file-link download-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}', event)"
+                       data-content-id="${content.id}">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                 </div>`;
@@ -316,8 +406,9 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>ملف مرفوع:</p>
-                    <a href="${content.content}" class="file-link" 
-                       onclick="handleFileDownload('${content.id}', '${content.title}', event)">
+                    <a href="${content.content}" class="file-link download-link" 
+                       onclick="handleFileDownload('${content.id}', '${content.title}', event)"
+                       data-content-id="${content.id}">
                         ${content.title} - اضغط هنا لتحميل الملف
                     </a>
                     ${content.note ? `
@@ -331,7 +422,7 @@ function renderContent(content) {
             return `
                 <div class="content-preview">
                     <p>رابط خارجي:</p>
-                    <a href="${content.content}" target="_blank" class="file-link" onclick="event.stopPropagation()">
+                    <a href="${content.content}" target="_blank" class="file-link" onclick="event.stopPropagation()" rel="noopener noreferrer">
                         ${content.title} - اضغط هنا لفتح الرابط
                     </a>
                     ${content.note ? `
@@ -426,6 +517,16 @@ function initStudentPage() {
     
     // إعداد نظام التقييم
     setupRatingSystem();
+    
+    // إعداد معالجة النقر على روابط التحميل
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('download-link')) {
+            e.preventDefault();
+            const contentId = e.target.getAttribute('data-content-id');
+            const contentTitle = e.target.textContent.replace(' - اضغط هنا لتحميل الملف', '').trim();
+            handleFileDownload(contentId, contentTitle, e);
+        }
+    });
     
     // إعداد نموذج التسجيل
     if (window.loginForm) {

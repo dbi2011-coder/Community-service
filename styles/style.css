@@ -1,0 +1,1542 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+}
+
+.logo img {
+    max-width: 150px;
+    height: auto;
+    margin-bottom: 15px;
+}
+
+h1 {
+    color: #2c3e50;
+    margin: 15px 0;
+    font-size: 2.2em;
+}
+
+.credits {
+    margin-top: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.credits h3 {
+    margin: 8px 0;
+    font-size: 1.3em;
+}
+
+.credits p {
+    margin: 5px 0;
+    font-size: 1.1em;
+}
+
+.main-content {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+}
+
+.project-description {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 25px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-radius: 10px;
+}
+
+.project-description h2 {
+    font-size: 1.8em;
+    margin-bottom: 10px;
+}
+
+.login-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.option-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 50px 30px;
+    border-radius: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.option-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+}
+
+.option-card h2 {
+    margin-bottom: 15px;
+    font-size: 28px;
+}
+
+.login-form {
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+    text-align: right;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+}
+
+.btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn.secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    margin-bottom: 20px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.content-card {
+    background: #f8f9fa;
+    padding: 35px;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+    margin-top: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.visitor-info-card {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.visitor-info-card h3 {
+    margin-bottom: 15px;
+    font-size: 1.4em;
+    text-align: center;
+    border-bottom: 2px solid rgba(255,255,255,0.3);
+    padding-bottom: 10px;
+}
+
+.visitor-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.visitor-details p {
+    margin: 8px 0;
+    font-size: 1.1em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+}
+
+.visitor-details strong {
+    color: #e8f4ff;
+}
+
+.admin-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+.upload-section, .students-list-section, .students-management-section {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 15px;
+    text-align: right;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+tr:hover {
+    background: #f8f9fa;
+}
+
+.content-preview {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    margin: 25px 0;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.file-link {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 25px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin: 10px 0;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.file-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.files-list-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.files-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.file-item:hover {
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.file-info h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.file-info p {
+    margin: 2px 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.delete-btn {
+    background: #e74c3c;
+    padding: 8px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+}
+
+.edit-btn {
+    background: #3498db;
+    padding: 8px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 5px;
+}
+
+.edit-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.no-files {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+    font-style: italic;
+}
+
+.student-file-item {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.student-file-item:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+.student-file-item.viewed {
+    border-color: #27ae60;
+    background: #f8fff9;
+}
+
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.file-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.2em;
+}
+
+.status {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-align: center;
+    min-width: 120px;
+}
+
+.student-file-item:not(.viewed) .status {
+    background: #f39c12;
+    color: white;
+}
+
+.student-file-item.viewed .status {
+    background: #27ae60;
+    color: white;
+}
+
+.file-content {
+    margin: 15px 0;
+}
+
+.file-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.viewed-message {
+    color: #27ae60;
+    font-weight: bold;
+    margin: 0;
+    text-align: center;
+    padding: 10px;
+    background: #e8f5e8;
+    border-radius: 5px;
+}
+
+.view-btn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+}
+
+.file-note-group {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.file-note {
+    background: #e8f5e8;
+    padding: 10px;
+    border-radius: 5px;
+    border-right: 3px solid #27ae60;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+.note-section {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-right: 4px solid #667eea;
+}
+
+.note-section h4 {
+    color: #2c3e50;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+.note-text {
+    color: #555;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.search-section {
+    margin-bottom: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.4em;
+}
+
+.close-modal {
+    font-size: 24px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.close-modal:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+
+/* أنماط متقدمة لمربع الاختيار */
+.agreement-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: #2c3e50;
+    padding: 12px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+    position: relative;
+    user-select: none;
+}
+
+.checkbox-container:hover {
+    background: #e8f5e8;
+    border-color: #27ae60;
+}
+
+.checkbox-container.checked {
+    background: #e8f5e8;
+    border-color: #27ae60;
+    color: #27ae60;
+}
+
+.agreement-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: relative;
+    height: 22px;
+    width: 22px;
+    background-color: #fff;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    margin-left: 12px;
+    transition: all 0.3s ease;
+}
+
+.checkbox-container:hover .checkmark {
+    border-color: #27ae60;
+}
+
+.checkbox-container.checked .checkmark {
+    background-color: #27ae60;
+    border-color: #27ae60;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-container.checked .checkmark:after {
+    display: block;
+}
+
+/* أنماط نظام النجوم الجديد */
+.rating-instruction {
+    text-align: center;
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 16px;
+}
+
+.stars-rating-container {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+    margin: 20px 0;
+}
+
+.stars-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.rating-stars {
+    display: flex;
+    gap: 30px;
+    direction: ltr;
+    align-items: center;
+}
+
+.star-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.star-item:hover {
+    background: rgba(255, 193, 7, 0.1);
+    transform: translateY(-2px);
+}
+
+.star {
+    font-size: 2.8em;
+    color: #ddd;
+    transition: all 0.3s ease;
+    display: block;
+    text-align: center;
+    min-width: 50px;
+}
+
+.star.active {
+    color: #ffc107;
+    transform: scale(1.1);
+}
+
+.star.hover {
+    color: #ffc107;
+    opacity: 0.7;
+}
+
+.star-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #2c3e50;
+    text-align: center;
+    min-width: 80px;
+}
+
+.current-rating-display {
+    text-align: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 2px dashed #667eea;
+    margin-top: 15px;
+}
+
+#currentRatingText {
+    font-size: 16px;
+    font-weight: bold;
+    color: #667eea;
+    line-height: 1.4;
+}
+
+.rating-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.rating-actions .btn {
+    flex: 1;
+}
+
+.rating-display {
+    direction: ltr;
+    font-size: 1.2em;
+    color: #ffc107;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.rating-value {
+    color: #666;
+    font-size: 0.9em;
+    margin-right: 10px;
+    line-height: 1.4;
+    display: block;
+    margin-top: 5px;
+}
+
+.rating-notes-tooltip {
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 5px;
+    border-right: 3px solid #667eea;
+    margin-top: 5px;
+    font-size: 0.85em;
+    color: #555;
+}
+
+/* أنماط أزرار الإجراءات */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+}
+
+.delete-log-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    margin-top: 5px;
+}
+
+.delete-log-btn:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+}
+
+.action-buttons .btn {
+    margin: 2px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+/* أنماط جديدة لنظام التذاكر والطباعة */
+
+/* خيارات الاتصال */
+.contact-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.contact-form {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+}
+
+/* نتائج التذاكر */
+.ticket-result {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.ticket-result:hover {
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.ticket-result.closed {
+    background: #f8f9fa;
+    border-color: #95a5a6;
+}
+
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.ticket-id {
+    color: #667eea;
+    font-weight: bold;
+}
+
+.ticket-status {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.status-open {
+    background: #e8f5e8;
+    color: #27ae60;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-closed {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.ticket-info {
+    margin-bottom: 15px;
+}
+
+.ticket-info p {
+    margin: 5px 0;
+}
+
+/* تفاصيل التذكرة */
+.ticket-detail-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    border: 2px solid #e0e0e0;
+}
+
+.ticket-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.ticket-description {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.ticket-responses {
+    margin-top: 20px;
+}
+
+.response-item {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-right: 4px solid #667eea;
+}
+
+.response-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.response-date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.no-responses {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* إدارة التذاكر في لوحة المشرف */
+.tickets-management-section {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-top: 30px;
+}
+
+.tickets-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border: 2px solid #e0e0e0;
+}
+
+.stat-number {
+    font-size: 2em;
+    font-weight: bold;
+    color: #667eea;
+    display: block;
+    margin-top: 10px;
+}
+
+.print-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-controls label {
+    margin-bottom: 0;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.sort-select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    font-size: 14px;
+}
+
+.print-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* إدارة التذاكر في النافذة المنبثقة */
+.ticket-management {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.status-select {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+}
+
+.response-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.response-section textarea {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.modal-actions .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-width: 120px;
+}
+
+.modal-actions .btn.secondary {
+    padding: 10px 20px;
+    font-size: 14px;
+    background: #95a5a6;
+}
+
+/* تحسين أزرار الإدارة في التذاكر */
+.ticket-action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.tickets-list-section .view-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #3498db;
+}
+
+.tickets-list-section .delete-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #e74c3c;
+}
+
+/* تحسين أزرار الإدارة في قائمة التذاكر */
+#ticketsTableBody .view-btn,
+#ticketsTableBody .delete-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin: 2px;
+}
+
+#ticketsTableBody .view-btn {
+    background: #3498db;
+}
+
+#ticketsTableBody .delete-btn {
+    background: #e74c3c;
+}
+
+/* ============================================= */
+/* الإصلاحات الجديدة للأزرار غير المتساوية */
+/* ============================================= */
+
+/* إصلاح نهائي لأزرار النماذج - جعلها متساوية تماماً */
+.form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 25px;
+    align-items: stretch;
+}
+
+.form-actions .btn {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 20px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 0 !important;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    flex: 1;
+}
+
+/* إزالة جميع الهوامش من الأزرار الثانوية */
+.btn.secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    margin: 0 !important;
+    color: white;
+}
+
+/* تأكيد إزالة الهوامش من جميع الأزرار */
+.btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin: 0 !important;
+}
+
+/* تحسين استجابة التصميم للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .form-actions {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .form-actions .btn {
+        min-height: 45px;
+        width: 100%;
+    }
+}
+
+/* تحسين أزرار خيارات الاتصال */
+.contact-options .option-card {
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.contact-options .option-card h2 {
+    margin-bottom: 12px;
+    font-size: 24px;
+    line-height: 1.3;
+}
+
+.contact-options .option-card p {
+    margin: 0;
+    font-size: 15px;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+/* تحسين استجابة التصميم للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .admin-panel {
+        grid-template-columns: 1fr;
+    }
+    
+    .login-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .contact-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+    
+    header {
+        padding: 20px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+    }
+    
+    .project-description h2 {
+        font-size: 1.4em;
+    }
+    
+    .file-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .file-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .visitor-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .visitor-details p {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .students-management-section {
+        padding: 20px;
+    }
+    
+    .search-section {
+        padding: 15px;
+    }
+    
+    .main-content {
+        padding: 20px;
+    }
+    
+    .option-card {
+        padding: 30px 20px;
+    }
+    
+    .checkbox-container {
+        font-size: 14px;
+        padding: 10px 15px;
+    }
+    
+    .checkmark {
+        height: 20px;
+        width: 20px;
+        margin-left: 10px;
+    }
+    
+    .checkmark:after {
+        left: 5px;
+        top: 1px;
+        width: 4px;
+        height: 8px;
+    }
+    
+    .agreement-section {
+        gap: 12px;
+    }
+    
+    .rating-stars {
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .star-item {
+        padding: 8px;
+        gap: 5px;
+    }
+    
+    .star {
+        font-size: 2.2em;
+        min-width: 40px;
+    }
+    
+    .star-label {
+        font-size: 12px;
+        min-width: 60px;
+    }
+    
+    .stars-rating-container {
+        padding: 20px 15px;
+    }
+    
+    .action-buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .action-buttons .btn {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+    
+    .delete-log-btn {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    #currentRatingText {
+        font-size: 14px;
+    }
+    
+    .rating-value {
+        font-size: 0.8em;
+    }
+    
+    .contact-form {
+        padding: 20px;
+    }
+    
+    .tickets-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .print-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .sort-controls {
+        width: 100%;
+        margin-bottom: 10px;
+        justify-content: space-between;
+    }
+    
+    .print-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .print-actions .btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    .ticket-action-buttons {
+        flex-direction: column;
+    }
+    
+    .ticket-action-buttons .btn {
+        width: 100%;
+        margin: 2px 0;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+    
+    .modal-actions .btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        margin: 2px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 5px;
+    }
+    
+    header {
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 1.5em;
+    }
+    
+    .credits {
+        padding: 10px;
+    }
+    
+    .credits h3 {
+        font-size: 1.1em;
+    }
+    
+    .btn {
+        padding: 12px 25px;
+        font-size: 16px;
+    }
+    
+    .modal-content {
+        width: 100%;
+        margin: 5px;
+        border-radius: 8px;
+    }
+    
+    .modal-header {
+        padding: 15px;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+    
+    .form-actions .btn {
+        padding: 12px;
+    }
+    
+    .visitor-info-card {
+        padding: 15px;
+    }
+    
+    .visitor-details p {
+        font-size: 1em;
+    }
+    
+    .rating-stars {
+        gap: 10px;
+    }
+    
+    .star-item {
+        padding: 5px;
+    }
+    
+    .star {
+        font-size: 1.8em;
+        min-width: 35px;
+    }
+    
+    .star-label {
+        font-size: 11px;
+        min-width: 50px;
+    }
+    
+    .stars-rating-container {
+        padding: 15px 10px;
+    }
+    
+    #currentRatingText {
+        font-size: 13px;
+    }
+    
+    .contact-form {
+        padding: 15px;
+    }
+    
+    .ticket-detail-card {
+        padding: 15px;
+    }
+    
+    .tickets-management-section {
+        padding: 20px;
+    }
+}
+
+@media print {
+    .btn, .upload-section, .delete-btn, .view-btn, .edit-btn, .search-section, .students-management-section {
+        display: none;
+    }
+    
+    body {
+        background: white;
+    }
+    
+    .container {
+        box-shadow: none;
+    }
+    
+    .main-content {
+        box-shadow: none;
+        background: white;
+    }
+    
+    .file-item {
+        break-inside: avoid;
+    }
+    
+    .student-file-item {
+        break-inside: avoid;
+    }
+}
+
+.files-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.files-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.files-list::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 4px;
+}
+
+.files-list::-webkit-scrollbar-thumb:hover {
+    background: #5a6fd8;
+}
+
+.student-file-item:not(.viewed) .file-actions {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px dashed #e0e0e0;
+    margin-top: 15px;
+}
+
+.student-file-item.viewed .file-actions {
+    background: #e8f5e8;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #27ae60;
+    margin-top: 15px;
+}

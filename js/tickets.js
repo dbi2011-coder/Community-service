@@ -13,6 +13,10 @@ window.viewTicketDetails = async function(ticketId) {
             document.getElementById('ticketDetailsSection').classList.remove('hidden');
             
             const detailsContent = document.getElementById('ticketDetailsContent');
+            
+            // تحديد إذا كان الزائر يمكنه الرد
+            const canRespond = ticket.status === 'مفتوحة' || ticket.status === 'قيد المعالجة';
+            
             detailsContent.innerHTML = `
                 <div class="ticket-detail-card">
                     <div class="ticket-detail-header">
@@ -29,11 +33,12 @@ window.viewTicketDetails = async function(ticketId) {
                         <h4>وصف المشكلة:</h4>
                         <p>${ticket.description}</p>
                     </div>
+                    
                     ${ticket.responses && ticket.responses.length > 0 ? `
                         <div class="ticket-responses">
-                            <h4>الردود:</h4>
+                            <h4>سجل المحادثة:</h4>
                             ${ticket.responses.map((response, index) => `
-                                <div class="response-item">
+                                <div class="response-item ${response.responder === 'الزائر' ? 'visitor-response' : 'admin-response'}">
                                     <div class="response-header">
                                         <strong>${response.responder}</strong>
                                         <span class="response-date">${response.date}</span>
@@ -47,6 +52,23 @@ window.viewTicketDetails = async function(ticketId) {
                             <p>لا توجد ردود حتى الآن</p>
                         </div>
                     `}
+                    
+                    ${canRespond ? `
+                        <div class="visitor-response-section">
+                            <h4>إضافة رد جديد</h4>
+                            <textarea id="visitorResponseMessage" rows="4" placeholder="أدخل ردك هنا..."></textarea>
+                            <button class="btn" onclick="addVisitorResponse('${ticket.id}')">إرسال الرد</button>
+                            <p class="response-note">يمكنك الرد على التذكرة في أي وقت طالما لم يتم إغلاقها</p>
+                        </div>
+                    ` : `
+                        <div class="ticket-closed-message">
+                            <p>⚠️ هذه التذكرة مغلقة ولا يمكن إضافة ردود جديدة.</p>
+                        </div>
+                    `}
+                    
+                    <div class="ticket-actions">
+                        <button class="btn secondary" onclick="showTicketQuerySection()">العودة للبحث</button>
+                    </div>
                 </div>
             `;
         } else {
@@ -59,32 +81,48 @@ window.viewTicketDetails = async function(ticketId) {
 };
 
 window.addVisitorResponse = async function(ticketId) {
-    const responseMessage = prompt('أدخل ردك على التذكرة:');
-    if (responseMessage && responseMessage.trim()) {
-        try {
-            const tickets = await window.supabaseClient.getTickets();
-            const ticket = tickets.find(t => t.id === ticketId);
-            
-            if (ticket) {
-                const responses = [...(ticket.responses || []), {
-                    responder: 'الزائر',
-                    message: responseMessage.trim(),
-                    date: new Date().toLocaleString('ar-SA')
-                }];
-                
-                await window.supabaseClient.updateTicket(ticketId, {
-                    responses: responses,
-                    last_update: new Date().toISOString()
-                });
-                
-                // تحديث العرض
-                await window.viewTicketDetails(ticketId);
-                alert('تم إضافة ردك بنجاح');
+    const responseMessageInput = document.getElementById('visitorResponseMessage');
+    if (!responseMessageInput) return;
+    
+    const responseMessage = responseMessageInput.value.trim();
+    
+    if (!responseMessage) {
+        alert('يرجى إدخال نص الرد');
+        return;
+    }
+    
+    try {
+        const tickets = await window.supabaseClient.getTickets();
+        const ticket = tickets.find(t => t.id === ticketId);
+        
+        if (ticket) {
+            // التحقق من أن التذكرة ليست مغلقة
+            if (ticket.status === 'مغلقة') {
+                alert('لا يمكن إضافة رد على تذكرة مغلقة');
+                return;
             }
-        } catch (error) {
-            console.error('Error adding visitor response:', error);
-            alert('خطأ في إضافة الرد: ' + error.message);
+            
+            const responses = [...(ticket.responses || []), {
+                responder: 'الزائر',
+                message: responseMessage,
+                date: new Date().toLocaleString('ar-SA')
+            }];
+            
+            await window.supabaseClient.updateTicket(ticketId, {
+                responses: responses,
+                last_update: new Date().toISOString()
+            });
+            
+            // مسح حقل الرد
+            responseMessageInput.value = '';
+            
+            // تحديث العرض
+            await window.viewTicketDetails(ticketId);
+            alert('تم إضافة ردك بنجاح وسيتم مراجعته من قبل المسؤول');
         }
+    } catch (error) {
+        console.error('Error adding visitor response:', error);
+        alert('خطأ في إضافة الرد: ' + error.message);
     }
 };
 
@@ -141,7 +179,7 @@ if (window.ticketsPageInitialized) {
                     
                     try {
                         const ticketId = await createNewTicket(title, identity, description);
-                        alert(`تم إنشاء التذكرة بنجاح! رقم التذكرة: ${ticketId}\nيرجى حفظ رقم التذكرة للمتابعة.`);
+                        alert(`تم إنشاء التذكرة بنجاح! رقم التذكرة: ${ticketId}\nيرجى حفظ رقم التذكرة للمتابعة.\n\nيمكنك الآن متابعة التذكرة والرد على المسؤول من خلال قسم "استعلام عن تذكرة".`);
                         newTicketForm.reset();
                         hideAllSections();
                     } catch (error) {
@@ -236,6 +274,11 @@ if (window.ticketsPageInitialized) {
             results.forEach(ticket => {
                 const ticketElement = document.createElement('div');
                 ticketElement.className = `ticket-result ${ticket.status === 'مغلقة' ? 'closed' : ''}`;
+                
+                // تحديد إذا كان الزائر يمكنه الرد
+                const canRespond = ticket.status === 'مفتوحة' || ticket.status === 'قيد المعالجة';
+                const responseCount = ticket.responses ? ticket.responses.length : 0;
+                
                 ticketElement.innerHTML = `
                     <div class="ticket-header">
                         <h4>${ticket.title} <span class="ticket-id">#${ticket.id}</span></h4>
@@ -245,11 +288,12 @@ if (window.ticketsPageInitialized) {
                         <p><strong>رقم الهوية:</strong> ${ticket.identity}</p>
                         <p><strong>تاريخ الإنشاء:</strong> ${ticket.createdDate}</p>
                         <p><strong>آخر تحديث:</strong> ${ticket.lastUpdate}</p>
+                        <p><strong>عدد الردود:</strong> ${responseCount}</p>
                     </div>
                     <div class="ticket-actions">
                         <button class="btn view-btn" onclick="viewTicketDetails('${ticket.id}')">عرض التفاصيل</button>
-                        ${ticket.status !== 'مغلقة' ? `
-                            <button class="btn secondary" onclick="addVisitorResponse('${ticket.id}')">إضافة رد</button>
+                        ${canRespond ? `
+                            <span class="response-badge">✓ يمكنك الرد</span>
                         ` : ''}
                     </div>
                 `;

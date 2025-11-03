@@ -1005,4 +1005,73 @@ async function handleUploadForm(e) {
     if (type === 'fileWithNote') {
         note = document.getElementById('contentNote').value.trim();
         if (note.length < 3) {
-            alert('يرجى إدخال ملاحظة
+            alert('يرجى إدخال ملاحظة حول الملف');
+            return;
+        }
+    }
+    
+    if (title && content) {
+        try {
+            await addNewContent(type, title, content, note);
+            document.getElementById('uploadForm').reset();
+            // إعادة تعيين الحقول المخفية
+            handleContentTypeChange.call(document.getElementById('contentType'));
+        } catch (error) {
+            alert('خطأ في إضافة المحتوى: ' + error.message);
+        }
+    } else {
+        alert('يرجى ملء جميع الحقول المطلوبة');
+    }
+}
+
+// دالة لتحويل الملف إلى Base64
+function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            // إرجاع البيانات كـ Base64 مع معلومات الملف
+            const fileData = {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                data: reader.result.split(',')[1] // إزالة header البيانات
+            };
+            resolve(JSON.stringify(fileData));
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function addNewContent(type, title, content, note = '') {
+    try {
+        await window.supabaseClient.addContent({
+            type: type,
+            title: title,
+            content: content,
+            note: note
+        });
+        await loadFilesList();
+        alert('تم إضافة المحتوى بنجاح!');
+    } catch (error) {
+        console.error('Error adding content:', error);
+        throw error;
+    }
+}
+
+// جعل جميع الدوال متاحة في النطاق العام
+window.openTicketManagement = openTicketManagement;
+window.addResponse = addResponse;
+window.updateTicketStatusAndClose = updateTicketStatusAndClose;
+window.deleteTicket = deleteTicket;
+window.closeTicketModal = closeTicketModal;
+window.loadTicketsData = loadTicketsData;
+window.updateTicketsStats = updateTicketsStats;
+window.printVisitorsList = printVisitorsList;
+window.printContentsList = printContentsList;
+window.adminDeleteContent = adminDeleteContent;
+window.openEditStudentModal = openEditStudentModal;
+window.deleteStudent = deleteStudent;
+window.editRating = editRating;
+window.deleteRating = deleteRating;
+window.deleteStudentLog = deleteStudentLog;

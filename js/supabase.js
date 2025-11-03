@@ -16,6 +16,13 @@ if (window.supabaseClient && window.isSupabaseInitialized) {
 function initializeSupabase() {
     console.log('🔄 Attempting to initialize Supabase...');
     
+    // التحقق من التهيئة المسبقة
+    if (window.supabaseClient && window.isSupabaseInitialized) {
+        console.log('✅ Supabase already initialized');
+        document.dispatchEvent(new CustomEvent('supabaseReady'));
+        return;
+    }
+    
     // محاولة تهيئة Supabase
     try {
         // التحقق من وجود المكتبة أولاً

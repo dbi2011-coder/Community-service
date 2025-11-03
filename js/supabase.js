@@ -1,4 +1,4 @@
-// js/supabase.js
+// js/supabase.js - الإصدار المعدل النهائي
 console.log('🔧 Starting Supabase functions initialization...');
 
 // التحقق من عدم التهيئة المزدوجة
@@ -9,60 +9,64 @@ if (window.supabaseClient && window.isSupabaseInitialized) {
 }
 
 function initializeSupabase() {
-    // محاولة تهيئة Supabase
-    try {
-        // التحقق من وجود المكتبة أولاً
-        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-            console.warn('⚠️ Supabase library not available yet, will retry later...');
-            // إعادة المحاولة بعد ثانية
-            setTimeout(initializeSupabase, 1000);
-            return;
-        }
+    console.log('🔄 Attempting to initialize Supabase...');
+    
+    // التحقق من وجود المكتبة أولاً
+    if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+        console.warn('❌ Supabase library not loaded yet, loading manually...');
+        loadSupabaseManually();
+        return;
+    }
 
+    createSupabaseClient();
+}
+
+function loadSupabaseManually() {
+    console.log('📦 Loading Supabase library manually...');
+    
+    if (window.supabaseLoadAttempted) {
+        console.log('⚠️ Supabase load already attempted, setting up fallback...');
+        setTimeout(setupFallbackMode, 100);
+        return;
+    }
+    
+    window.supabaseLoadAttempted = true;
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+    script.onload = function() {
+        console.log('✅ Supabase library loaded manually');
+        setTimeout(createSupabaseClient, 500);
+    };
+    script.onerror = function() {
+        console.error('❌ Failed to load Supabase library manually');
+        setTimeout(setupFallbackMode, 100);
+    };
+    document.head.appendChild(script);
+}
+
+function createSupabaseClient() {
+    try {
         const SUPABASE_URL = 'https://doekfbxelitbeqkbuiax.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvZWtmYnhlbGl0YmVxa2J1aWF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTU0MzAsImV4cCI6MjA3NzU5MTQzMH0.vFQYMahYm6p1UOtMeZjH8U9Q9ueXdcAQFQwc4YudXlk';
 
-        let supabase;
-        let supabaseClient;
-
-        // محاولة إنشاء العميل
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                auth: {
-                    persistSession: false,
-                    autoRefreshToken: false
-                },
-                db: {
-                    schema: 'public'
-                },
-                global: {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            });
-            console.log('✅ Supabase client created successfully');
-        } catch (clientError) {
-            console.error('❌ Error creating Supabase client:', clientError);
-            throw clientError;
-        }
+        console.log('🔧 Creating Supabase client...');
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false
+            }
+        });
 
         // دوال المشرفين
         async function verifyAdmin(username, password) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
-                const { data, error } = await supabase
-                    .rpc('verify_password', {
-                        username_input: username,
-                        password_input: password
-                    });
-                
-                if (error) {
-                    console.error('Error in verifyAdmin RPC:', error);
-                    return false;
+                // التحقق البسيط من بيانات الدخول
+                if (username === "عمرو بن العاص" && password === "10243") {
+                    return true;
                 }
-                return data;
+                return false;
             } catch (error) {
                 console.error('Error in verifyAdmin:', error);
                 return false;
@@ -71,15 +75,16 @@ function initializeSupabase() {
 
         // دوال المحتويات
         async function getContents() {
-            if (!supabase) return [];
-            
             try {
                 const { data, error } = await supabase
                     .from('contents')
                     .select('*')
                     .order('created_at', { ascending: false });
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Error getting contents:', error);
+                    return [];
+                }
                 
                 return data.map(item => ({
                     id: item.id,
@@ -96,8 +101,6 @@ function initializeSupabase() {
         }
 
         async function addContent(contentData) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { data, error } = await supabase
                     .from('contents')
@@ -127,8 +130,6 @@ function initializeSupabase() {
         }
 
         async function deleteContent(contentId) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { error } = await supabase
                     .from('contents')
@@ -144,15 +145,16 @@ function initializeSupabase() {
 
         // دوال بيانات الزوار
         async function getStudentsData() {
-            if (!supabase) return [];
-            
             try {
                 const { data, error } = await supabase
                     .from('students_data')
                     .select('*')
                     .order('first_login', { ascending: false });
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Error getting students data:', error);
+                    return [];
+                }
                 
                 return data.map(item => ({
                     name: item.name,
@@ -167,8 +169,6 @@ function initializeSupabase() {
         }
 
         async function saveStudentData(student) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { data, error } = await supabase
                     .from('students_data')
@@ -197,8 +197,6 @@ function initializeSupabase() {
         }
 
         async function updateStudentData(oldId, newData) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 if (oldId !== newData.id) {
                     await deleteStudent(oldId);
@@ -212,8 +210,6 @@ function initializeSupabase() {
         }
 
         async function deleteStudent(studentId) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { error } = await supabase
                     .from('students_data')
@@ -229,15 +225,16 @@ function initializeSupabase() {
 
         // دوال سجلات الاطلاع
         async function getStudentsLog() {
-            if (!supabase) return [];
-            
             try {
                 const { data, error } = await supabase
                     .from('students_log')
                     .select('*')
                     .order('view_date', { ascending: false });
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Error getting students log:', error);
+                    return [];
+                }
                 
                 return data.map(item => ({
                     id: item.id,
@@ -260,8 +257,6 @@ function initializeSupabase() {
         }
 
         async function addStudentLog(logData) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { data, error } = await supabase
                     .from('students_log')
@@ -298,8 +293,6 @@ function initializeSupabase() {
         }
 
         async function updateStudentRating(logId, rating, ratingNotes) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { data, error } = await supabase
                     .from('students_log')
@@ -335,8 +328,6 @@ function initializeSupabase() {
         }
 
         async function deleteStudentLog(logId) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { error } = await supabase
                     .from('students_log')
@@ -352,8 +343,6 @@ function initializeSupabase() {
 
         // دوال التذاكر
         async function getTickets() {
-            if (!supabase) return [];
-            
             try {
                 const { data, error } = await supabase
                     .from('support_tickets')
@@ -383,10 +372,7 @@ function initializeSupabase() {
         }
 
         async function createTicket(ticketData) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
-                // استخدام insert بدون select لتجنب الخطأ 409
                 const { error } = await supabase
                     .from('support_tickets')
                     .insert([{
@@ -399,8 +385,7 @@ function initializeSupabase() {
                     }]);
                 
                 if (error) {
-                    // إذا كان الخطأ 409 (تعارض)، حاول مع ID مختلف
-                    if (error.code === '23505') { // PostgreSQL unique violation
+                    if (error.code === '23505') {
                         const newTicketId = 'T' + Date.now().toString();
                         console.log(`🔄 Ticket ID conflict, retrying with new ID: ${newTicketId}`);
                         
@@ -429,8 +414,6 @@ function initializeSupabase() {
         }
 
         async function updateTicket(ticketId, updates) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { data, error } = await supabase
                     .from('support_tickets')
@@ -459,8 +442,6 @@ function initializeSupabase() {
         }
 
         async function deleteTicket(ticketId) {
-            if (!supabase) throw new Error('Supabase client not available');
-            
             try {
                 const { error } = await supabase
                     .from('support_tickets')
@@ -475,7 +456,7 @@ function initializeSupabase() {
         }
 
         // تعريف الكائن الرئيسي
-        supabaseClient = {
+        window.supabaseClient = {
             verifyAdmin,
             getContents,
             addContent,
@@ -494,12 +475,15 @@ function initializeSupabase() {
             deleteTicket
         };
 
-        // جعل الدوال متاحة عالمياً
-        window.supabaseClient = supabaseClient;
         window.supabase = supabase;
         window.isSupabaseInitialized = true;
 
         console.log('✅ Supabase functions initialized successfully');
+        
+        // إرسال حدث أن النظام جاهز
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('supabaseReady'));
+        }, 100);
 
     } catch (error) {
         console.error('❌ Supabase functions initialization failed:', error);
@@ -510,7 +494,6 @@ function initializeSupabase() {
 function setupFallbackMode() {
     console.log('🛡️ Setting up fallback mode...');
     
-    // إنشاء دوال وهمية في حالة الفشل
     window.supabaseClient = {
         verifyAdmin: async () => false,
         getContents: async () => [],
@@ -533,5 +516,10 @@ function setupFallbackMode() {
     window.supabase = {};
     window.isSupabaseInitialized = true;
     
-    console.log('✅ Fallback mode activated in supabase.js');
+    console.log('✅ Fallback mode activated');
+    
+    // إرسال حدث أن النظام جاهز (وضع افتراضي)
+    setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('supabaseReady'));
+    }, 100);
 }

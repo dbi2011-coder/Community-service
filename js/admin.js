@@ -1,4 +1,6 @@
-// js/admin.js - الملف المعدل ليعمل مع Supabase
+// js/admin.js - الإصدار المعدل النهائي
+console.log('👨‍💼 Admin script loaded');
+
 // بيانات تسجيل الدخول الافتراضية
 const ADMIN_CREDENTIALS = {
     username: "عمرو بن العاص",
@@ -8,48 +10,27 @@ const ADMIN_CREDENTIALS = {
 // متغيرات عامة
 let currentSortOrder = 'date';
 
-// دالة للتحقق من تحميل Supabase
-function waitForSupabase() {
-    return new Promise((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        const checkSupabase = () => {
-            if (window.supabaseClient && window.supabase) {
-                resolve();
-            } else if (attempts < maxAttempts) {
-                attempts++;
-                setTimeout(checkSupabase, 100);
-            } else {
-                reject(new Error('Supabase failed to load'));
-            }
-        };
-        checkSupabase();
-    });
-}
-
 // الانتظار حتى يكون Supabase جاهزاً
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 Admin page DOM loaded');
+    
     document.addEventListener('supabaseReady', initAdminPage);
     
     // إذا كان supabase جاهزاً بالفعل
-    if (window.supabaseClient) {
-        initAdminPage();
+    if (window.supabaseClient && window.isSupabaseInitialized) {
+        console.log('✅ Supabase already ready, initializing admin page...');
+        setTimeout(initAdminPage, 100);
     }
 });
 
 function initAdminPage() {
-    console.log('Initializing admin page...');
+    console.log('👨‍💼 Initializing admin page...');
     
-    const adminLoginSection = document.getElementById('adminLoginSection');
-    const adminPanel = document.getElementById('adminPanel');
     const adminLoginForm = document.getElementById('adminLoginForm');
     const contentType = document.getElementById('contentType');
     const uploadForm = document.getElementById('uploadForm');
     const searchStudent = document.getElementById('searchStudent');
     const editStudentForm = document.getElementById('editStudentForm');
-    const cancelEdit = document.getElementById('cancelEdit');
-    const closeModal = document.querySelector('.close-modal');
     const printVisitorsBtn = document.getElementById('printVisitorsBtn');
     const printContentsBtn = document.getElementById('printContentsBtn');
     const searchTickets = document.getElementById('searchTickets');
@@ -59,26 +40,28 @@ function initAdminPage() {
     checkAdminLogin();
 
     // التعامل مع تسجيل الدخول
-    adminLoginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('adminUsername').value.trim();
-        const password = document.getElementById('adminPassword').value.trim();
-        
-        try {
-            const isValid = await window.supabaseClient.verifyAdmin(username, password);
+    if (adminLoginForm) {
+        adminLoginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (isValid) {
-                localStorage.setItem('adminLoggedIn', 'true');
-                showAdminPanel();
-            } else {
-                alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value.trim();
+            
+            try {
+                const isValid = await window.supabaseClient.verifyAdmin(username, password);
+                
+                if (isValid) {
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    showAdminPanel();
+                } else {
+                    alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+                }
+            } catch (error) {
+                console.error('Error during login:', error);
+                alert('حدث خطأ أثناء تسجيل الدخول');
             }
-        } catch (error) {
-            console.error('Error during login:', error);
-            alert('حدث خطأ أثناء تسجيل الدخول');
-        }
-    });
+        });
+    }
 
     // التعامل مع تغيير نوع المحتوى
     if (contentType) {
@@ -122,6 +105,9 @@ function initAdminPage() {
     }
 
     // إغلاق نافذة التعديل
+    const closeModal = document.querySelector('.close-modal');
+    const cancelEdit = document.getElementById('cancelEdit');
+    
     if (closeModal) {
         closeModal.addEventListener('click', function() {
             document.getElementById('editStudentModal').classList.add('hidden');
@@ -181,15 +167,7 @@ function initAdminPage() {
         });
     }
 
-    // تحديث البيانات كل 10 ثواني
-    setInterval(async () => {
-        if (localStorage.getItem('adminLoggedIn') === 'true') {
-            await loadStudentsList();
-            await loadStudentsData();
-            await loadTicketsData();
-            await updateTicketsStats();
-        }
-    }, 10000);
+    console.log('✅ Admin page initialized successfully');
 }
 
 // دوال مساعدة للتذاكر
